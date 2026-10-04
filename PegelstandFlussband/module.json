@@ -1,0 +1,15 @@
+{
+    "id": "{71C714BA-12BA-4DF4-BD6A-911506B05D45}",
+    "name": "Pegelstand Flussband",
+    "type": 3,
+    "vendor": "PEGELONLINE (WSV)",
+    "aliases": [
+        "Pegelstand Flussband",
+        "Flussband",
+        "Hochwasserwelle"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "PEGELFB"
+}

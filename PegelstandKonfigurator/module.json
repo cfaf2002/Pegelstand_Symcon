@@ -1,0 +1,14 @@
+{
+    "id": "{540B4DE7-1C65-407B-8866-4AD66E54EFF7}",
+    "name": "Pegelstand Konfigurator",
+    "type": 4,
+    "vendor": "PEGELONLINE (WSV)",
+    "aliases": [
+        "Pegelstand Konfigurator",
+        "Pegelstationen"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "PEGELCFG"
+}

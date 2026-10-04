@@ -1,0 +1,1637 @@
+<!--
+    Kachel für das Modul "Pegelstand" (IP-Symcon HTML-SDK)
+    Copyright (c) 2026 Armin Frohwerk · MIT-Lizenz (siehe LICENSE)
+    SPDX-License-Identifier: MIT
+-->
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+    }
+
+    #tile {
+        --sky1: #0e2233;
+        --sky2: #173a52;
+        --w1: #3b9be0;
+        --w2: #0b4a86;
+        --wspeed: 8s;
+        --wspeed2: 13s;
+        --wamp: 1;
+        --pad-left: 0px;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        container-type: size;
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 100%);
+        border-radius: inherit;
+        cursor: pointer;
+        -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: transparent;
+        transition: background 2s;
+    }
+
+    /* Himmel nach Tageszeit */
+    #tile.sky-day   { --sky1: #4f8fc0; --sky2: #b9dcef; }
+    #tile.sky-dusk  { --sky1: #23305a; --sky2: #b7673f; }
+    #tile.sky-night { --sky1: #070f19; --sky2: #132538; }
+
+    /* Wasserfarbe nach Zustand */
+    #tile.st-low    { --w1: #6cc3e6; --w2: #2a74a3; }
+    #tile.st-high   { --w1: #f5ad3c; --w2: #b0561a; }
+    #tile.st-warn   { --w1: #ef5a5f; --w2: #8c1c22; }
+    #tile.st-nodata { --w1: #6b7a86; --w2: #3a4650; }
+
+    #tile.sky-day .content { text-shadow: 0 1px 4px rgba(0, 40, 80, .55); }
+    #tile.sky-day .ref span { text-shadow: 0 1px 3px rgba(0, 40, 80, .7); }
+
+    #tile.with-staff { --pad-left: clamp(30px, 13cqmin, 44px); }
+
+    /* ---------- Sterne ---------- */
+    .stars {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 2s;
+        pointer-events: none;
+    }
+
+    #tile.sky-night .stars { opacity: 1; }
+    #tile.sky-dusk .stars  { opacity: .35; }
+
+    .star {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        border-radius: 50%;
+        background: #fff;
+        animation: twinkle 3s ease-in-out infinite;
+    }
+
+    @keyframes twinkle {
+        0%, 100% { opacity: .9; }
+        50%      { opacity: .25; }
+    }
+
+    /* ---------- Wasser ---------- */
+    .water {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 50%;
+        transition: height 1.4s cubic-bezier(.25, .8, .25, 1);
+    }
+
+    .water .body {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, var(--w1) 0%, var(--w2) 100%);
+        transition: background .8s;
+    }
+
+    .wave {
+        position: absolute;
+        left: 0;
+        width: 200%;
+        fill: var(--w1);
+        transform-origin: bottom;
+        transition: fill .8s;
+    }
+
+    .wave.back {
+        top: -16px;
+        height: 16px;
+        opacity: .45;
+        animation: drift var(--wspeed2) linear infinite reverse;
+    }
+
+    .wave.front {
+        top: -13px;
+        height: 14px;
+        animation: drift var(--wspeed) linear infinite;
+    }
+
+    .wave svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+        transform: scaleY(var(--wamp));
+        transform-origin: bottom;
+        transition: transform 1s;
+    }
+
+    @keyframes drift {
+        from { transform: translateX(0); }
+        to   { transform: translateX(-50%); }
+    }
+
+    .shine {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(120% 60% at 20% 0%, rgba(255, 255, 255, .22), transparent 60%);
+        pointer-events: none;
+    }
+
+    /* Strömungsstreifen im Wasser */
+    .current {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 1s;
+    }
+
+    #tile.flow-up .current { opacity: .5; }
+
+    .current i {
+        position: absolute;
+        height: 2px;
+        width: 22%;
+        border-radius: 2px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .55), transparent);
+        animation: stream 2.6s linear infinite;
+    }
+
+    @keyframes stream {
+        from { transform: translateX(-120%); }
+        to   { transform: translateX(560%); }
+    }
+
+    /* ---------- Regen ---------- */
+    .rain {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: opacity 1s;
+        pointer-events: none;
+    }
+
+    #tile.raining .rain { opacity: 1; }
+
+    .rain i {
+        position: absolute;
+        top: -20%;
+        width: 1px;
+        height: 14%;
+        background: linear-gradient(180deg, transparent, rgba(220, 235, 255, .7));
+        animation: fall 0.9s linear infinite;
+    }
+
+    @keyframes fall {
+        to { transform: translateY(800%); }
+    }
+
+    /* ---------- Pegellatte ---------- */
+    .staff {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: var(--pad-left);
+        display: none;
+        pointer-events: none;
+    }
+
+    #tile.with-staff .staff { display: block; }
+
+    .staff .bar {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 5px;
+        width: 7px;
+        background: rgba(255, 255, 255, .92);
+        box-shadow: 0 0 4px rgba(0, 0, 0, .35);
+    }
+
+    .staff .blk {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        background: #1b1f24;
+    }
+
+    .staff .blk.half {
+        width: 55%;
+    }
+
+    .staff .lbl {
+        position: absolute;
+        left: 15px;
+        transform: translateY(50%);
+        font-size: 9px;
+        font-size: clamp(8px, 3.8cqmin, 11px);
+        font-weight: 600;
+        color: rgba(255, 255, 255, .85);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, .6);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .staff .mark {
+        position: absolute;
+        left: 0;
+        width: 16px;
+        height: 0;
+        border-top: 2px solid #ffd447;
+        transform: translateY(1px);
+        transition: bottom 1.4s cubic-bezier(.25, .8, .25, 1);
+    }
+
+    /* ---------- Kennwert-Linien und Verlauf ---------- */
+    .refs, .history {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        left: var(--pad-left);
+        pointer-events: none;
+    }
+
+    .ref {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 1px dashed rgba(255, 255, 255, .45);
+        transition: bottom 1.4s cubic-bezier(.25, .8, .25, 1);
+    }
+
+    .ref.warnline {
+        border-top: 1px solid rgba(255, 110, 110, .9);
+    }
+
+    .ref span {
+        position: absolute;
+        right: 6px;
+        bottom: 2px;
+        font-size: 10px;
+        font-size: clamp(9px, 4.2cqmin, 12px);
+        font-weight: 600;
+        letter-spacing: .04em;
+        color: rgba(255, 255, 255, .8);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+    }
+
+    .ref span.l {
+        bottom: auto;
+        top: 2px;
+    }
+
+    .history svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .history polyline {
+        fill: none;
+        stroke: rgba(255, 255, 255, .55);
+        stroke-width: 1.6;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+        vector-effect: non-scaling-stroke;
+    }
+
+    /* ---------- Inhalt ---------- */
+    .content {
+        position: absolute;
+        inset: 0;
+        box-sizing: border-box;
+        padding: 12px 14px;
+        padding: clamp(8px, 6cqmin, 20px) clamp(10px, 7cqmin, 24px) clamp(8px, 6cqmin, 20px) calc(var(--pad-left) + clamp(8px, 5cqmin, 20px));
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+    }
+
+    .station {
+        font-size: 14px;
+        font-size: clamp(11px, 7cqmin, 20px);
+        font-weight: 650;
+        line-height: 1.15;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-transform: capitalize;
+    }
+
+    .waterbody {
+        font-size: 11px;
+        font-size: clamp(9px, 5cqmin, 14px);
+        opacity: .75;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-transform: capitalize;
+    }
+
+    .main {
+        display: flex;
+        align-items: baseline;
+        gap: .35em;
+        flex-wrap: wrap;
+    }
+
+    .level {
+        font-size: 36px;
+        font-size: clamp(22px, 21cqmin, 72px);
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -.02em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .unit {
+        font-size: 14px;
+        font-size: clamp(11px, 7cqmin, 22px);
+        font-weight: 600;
+        opacity: .85;
+    }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .3em;
+        padding: .2em .6em;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, .28);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        font-size: 11px;
+        font-size: clamp(9px, 5cqmin, 14px);
+        font-weight: 600;
+        white-space: nowrap;
+        text-shadow: none;
+    }
+
+    .arrow {
+        display: inline-block;
+        transition: transform .6s;
+    }
+
+    .bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 6px;
+        font-size: 11px;
+        font-size: clamp(9px, 5cqmin, 14px);
+    }
+
+    .bottom .left, .bottom .right {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .bottom .right {
+        align-items: flex-end;
+        text-align: right;
+    }
+
+    .muted {
+        opacity: .8;
+    }
+
+    .badge {
+        display: none;
+        padding: .15em .55em;
+        border-radius: 6px;
+        background: #fff;
+        color: #c62828;
+        font-weight: 700;
+        text-shadow: none;
+        animation: pulse 1.6s ease-in-out infinite;
+    }
+
+    .badge.show {
+        display: inline-block;
+    }
+
+    .badge.info {
+        background: rgba(0, 0, 0, .4);
+        color: #fff;
+        animation: none;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: .55; }
+    }
+
+    /* ---------- Detailansicht ---------- */
+    .detail {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        box-sizing: border-box;
+        padding: clamp(8px, 5cqmin, 18px);
+        display: flex;
+        flex-direction: column;
+        gap: clamp(4px, 2.5cqmin, 10px);
+        background: rgba(7, 15, 25, .95);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        opacity: 0;
+        pointer-events: none;
+        transform: scale(.98);
+        transition: opacity .3s, transform .3s;
+        cursor: default;
+    }
+
+    .detail.open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+    }
+
+    .d-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        font-size: clamp(11px, 6cqmin, 18px);
+        font-weight: 650;
+        text-transform: capitalize;
+    }
+
+    .d-head small {
+        font-weight: 400;
+        opacity: .65;
+        font-size: .8em;
+        text-transform: none;
+    }
+
+    .d-close {
+        flex: none;
+        width: 1.6em;
+        height: 1.6em;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255, 255, 255, .12);
+        color: #fff;
+        font-size: inherit;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .d-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px;
+        font-size: clamp(9px, 4.4cqmin, 13px);
+    }
+
+    .d-stats div {
+        min-width: 0;
+        overflow: hidden;
+        background: rgba(255, 255, 255, .06);
+        border-radius: 8px;
+        padding: .35em .5em;
+    }
+
+    .d-stats b {
+        display: block;
+        font-size: 1.15em;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .d-stats span {
+        opacity: .6;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+
+    .d-chart {
+        position: relative;
+        flex: 1;
+        min-height: 40px;
+        margin-left: 34px;
+        margin-bottom: 16px;
+    }
+
+    .d-chart svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    .d-chart .grid {
+        stroke: rgba(255, 255, 255, .1);
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+    }
+
+    .d-chart .line {
+        fill: none;
+        stroke: #5fb4ff;
+        stroke-width: 2;
+        stroke-linejoin: round;
+        vector-effect: non-scaling-stroke;
+    }
+
+    .d-chart .area {
+        fill: url(#dArea);
+    }
+
+    .d-chart .refline {
+        stroke: rgba(255, 255, 255, .45);
+        stroke-dasharray: 4 3;
+        stroke-width: 1;
+        vector-effect: non-scaling-stroke;
+    }
+
+    .d-chart .refline.warn {
+        stroke: rgba(255, 110, 110, .9);
+        stroke-dasharray: none;
+    }
+
+    .d-y, .d-x, .d-r {
+        position: absolute;
+        font-size: clamp(8px, 3.6cqmin, 11px);
+        opacity: .65;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .d-y {
+        right: calc(100% + 6px);
+        transform: translateY(50%);
+    }
+
+    .d-x {
+        top: calc(100% + 3px);
+        transform: translateX(-50%);
+    }
+
+    .d-x.first { transform: none; }
+    .d-x.last  { transform: translateX(-100%); }
+
+    .d-r {
+        right: 2px;
+        opacity: .8;
+        transform: translateY(-2px);
+    }
+
+    .d-empty {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: .6;
+        font-size: clamp(10px, 5cqmin, 14px);
+    }
+
+
+    /* ---------- Farbschemas ---------- */
+    #tile.theme-dark  { --sky1: #070f19; --sky2: #132538; }
+    #tile.theme-light { --sky1: #cfe6f5; --sky2: #f1f8fd; color: #12304a; }
+    #tile.theme-light .content { text-shadow: 0 0 6px rgba(255, 255, 255, .9), 0 0 2px rgba(255, 255, 255, .9); }
+    #tile.theme-light .ref { border-top-color: rgba(18, 48, 74, .45); }
+    #tile.theme-light .ref span, #tile.theme-light .staff .lbl { color: #12304a; text-shadow: 0 0 4px rgba(255, 255, 255, .9); }
+    #tile.theme-light .chip { background: rgba(255, 255, 255, .6); color: #12304a; }
+    #tile.theme-light .history polyline { stroke: rgba(18, 48, 74, .45); }
+    #tile.theme-dark .stars { opacity: 1; }
+
+    /* ---------- eigenes Hintergrundbild ---------- */
+    .bg, .bgdim {
+        position: absolute;
+        inset: 0;
+        display: none;
+        pointer-events: none;
+    }
+
+    .bg {
+        background-size: cover;
+        background-position: center;
+    }
+
+    .bgdim {
+        background: #000;
+    }
+
+    #tile.has-bg .bg, #tile.has-bg .bgdim { display: block; }
+    #tile.has-bg .stars, #tile.has-bg .sun, #tile.has-bg .moon, #tile.has-bg .clouds,
+    #tile.layout-ring .sun, #tile.layout-ring .moon { display: none !important; }
+    #tile.has-bg .water { opacity: .8; }
+
+    /* ---------- Sonne, Mond, Wolken ---------- */
+    .sun, .moon {
+        position: absolute;
+        display: none;
+        width: clamp(16px, 10cqmin, 40px);
+        height: clamp(16px, 10cqmin, 40px);
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        transition: left 2s, top 2s;
+    }
+
+    .sun {
+        border-radius: 50%;
+        background: radial-gradient(circle, #fff6c9 0%, #ffd34d 55%, #ffb31a 100%);
+        box-shadow: 0 0 18px 6px rgba(255, 210, 80, .55), 0 0 60px 20px rgba(255, 200, 80, .25);
+    }
+
+    #tile.sky-dusk .sun {
+        background: radial-gradient(circle, #ffe2b0 0%, #ff9a4d 60%, #e8642a 100%);
+        box-shadow: 0 0 22px 8px rgba(255, 140, 60, .5);
+    }
+
+    .moon svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        filter: drop-shadow(0 0 8px rgba(255, 250, 220, .45));
+    }
+
+    #tile.show-sun .sun, #tile.show-moon .moon { display: block; }
+
+    .clouds {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 55%;
+        overflow: hidden;
+        pointer-events: none;
+        display: none;
+    }
+
+    #tile.show-clouds .clouds { display: block; }
+
+    .cloud {
+        position: absolute;
+        left: -30%;
+        width: 24%;
+        opacity: .85;
+        animation: cloud linear infinite;
+        fill: var(--cloud, rgba(255, 255, 255, .85));
+    }
+
+    #tile.sky-dusk  { --cloud: rgba(255, 196, 170, .55); }
+    #tile.sky-night, #tile.theme-dark { --cloud: rgba(170, 185, 210, .16); }
+    #tile.theme-light { --cloud: rgba(255, 255, 255, .95); }
+
+    @keyframes cloud {
+        from { transform: translateX(0); }
+        to   { transform: translateX(450%); }
+    }
+
+    /* ---------- Schiff ---------- */
+    .boat {
+        position: absolute;
+        top: clamp(-30px, -11cqmin, -16px);
+        left: 74%;
+        width: clamp(30px, 15cqmin, 54px);
+        display: none;
+        pointer-events: none;
+        animation: bob calc(var(--wspeed) / 2.2) ease-in-out infinite;
+        transform-origin: 50% 85%;
+    }
+
+    #tile.show-boat .boat { display: block; }
+
+    .boat svg {
+        width: 100%;
+        display: block;
+        overflow: visible;
+    }
+
+    .boat .anchor {
+        display: none;
+    }
+
+    #tile.anchored .boat {
+        animation: bob-calm 5s ease-in-out infinite;
+    }
+
+    #tile.anchored .boat .anchor { display: inline; }
+    #tile.anchored .boat .smoke  { display: none; }
+
+    .boat .smoke circle {
+        fill: rgba(255, 255, 255, .55);
+        animation: smoke 3s ease-out infinite;
+    }
+
+    .boat .smoke circle:nth-child(2) { animation-delay: 1s; }
+    .boat .smoke circle:nth-child(3) { animation-delay: 2s; }
+
+    @keyframes smoke {
+        from { transform: translate(0, 0) scale(.5); opacity: .8; }
+        to   { transform: translate(-10px, -14px) scale(1.6); opacity: 0; }
+    }
+
+    @keyframes bob {
+        0%, 100% { transform: translateY(0) rotate(-4deg); }
+        50%      { transform: translateY(2px) rotate(4deg); }
+    }
+
+    @keyframes bob-calm {
+        0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+        50%      { transform: translateY(1px) rotate(1.5deg); }
+    }
+
+    /* ---------- Einordnung und Prognose ---------- */
+    .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: .4em;
+    }
+
+    .chip.fc {
+        background: rgba(255, 170, 40, .85);
+        color: #2b1600;
+    }
+
+    .chip.ship {
+        background: rgba(229, 72, 77, .9);
+        color: #fff;
+    }
+
+    .chips, .insight {
+        max-width: 68%;
+    }
+
+    .insight {
+        margin-top: .35em;
+        font-size: 11px;
+        font-size: clamp(9px, 4.6cqmin, 13px);
+        opacity: .9;
+        line-height: 1.25;
+    }
+
+    /* ---------- Pegel-Ring ---------- */
+    .ring {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #tile.layout-ring .ring { display: flex; }
+    #tile.layout-ring .water, #tile.layout-ring .refs, #tile.layout-ring .history,
+    #tile.layout-ring .staff, #tile.layout-ring .content, #tile.layout-ring .rain { display: none; }
+
+    .ring svg {
+        width: 88cqmin;
+        height: 88cqmin;
+        overflow: visible;
+    }
+
+    .ring .track {
+        fill: none;
+        stroke: rgba(255, 255, 255, .15);
+        stroke-width: 6;
+    }
+
+    #tile.theme-light .ring .track { stroke: rgba(18, 48, 74, .15); }
+
+    .ring .prog {
+        fill: none;
+        stroke: var(--w1);
+        stroke-width: 6;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 1.4s cubic-bezier(.25, .8, .25, 1), stroke .8s;
+    }
+
+    .ring .rwater {
+        transition: transform 1.4s cubic-bezier(.25, .8, .25, 1);
+    }
+
+    .ring .rwave {
+        animation: rdrift var(--wspeed) linear infinite;
+    }
+
+    @keyframes rdrift {
+        from { transform: translateX(0); }
+        to   { transform: translateX(-40px); }
+    }
+
+    .ring text {
+        fill: currentColor;
+        text-anchor: middle;
+        font-weight: 700;
+    }
+
+    .ring .rval  { font-size: 21px; letter-spacing: -.5px; paint-order: stroke; stroke: rgba(0, 0, 0, .25); stroke-width: 2px; }
+    .ring .runit { font-size: 7px; font-weight: 600; opacity: .85; }
+    .ring .rname { font-size: 6.5px; font-weight: 600; opacity: .85; }
+    .ring .rtrend { font-size: 9px; }
+
+
+    /* ---------- Symcon-Design: Farben und Schrift der gewählten Visualisierung ---------- */
+    #tile.theme-symcon {
+        --sky1: transparent;
+        --sky2: transparent;
+        color: var(--content-color, #fff);
+    }
+
+    #tile.theme-symcon:not(.st-low):not(.st-high):not(.st-warn):not(.st-nodata) {
+        --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 80%, #fff);
+        --w2: color-mix(in srgb, var(--accent-color, #3b9be0) 70%, #000);
+    }
+
+    #tile.theme-symcon.st-low {
+        --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 50%, #fff);
+        --w2: var(--accent-color, #3b9be0);
+    }
+
+    #tile.theme-symcon:not(.sym-light) { --cloud: rgba(255, 255, 255, .14); }
+    #tile.theme-symcon.sym-light { --cloud: rgba(110, 130, 150, .22); }
+    #tile.theme-symcon.night:not(.sym-light) .stars { opacity: .8; }
+
+    /* helles Design: Wasser heller tönen, damit dunkle Schrift lesbar bleibt */
+    #tile.sym-light:not(.st-low):not(.st-high):not(.st-warn):not(.st-nodata) {
+        --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 30%, #fff);
+        --w2: color-mix(in srgb, var(--accent-color, #3b9be0) 55%, #fff);
+    }
+    #tile.sym-light.st-low  { --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 18%, #fff); --w2: color-mix(in srgb, var(--accent-color, #3b9be0) 38%, #fff); }
+    #tile.sym-light.st-high { --w1: #fbd9a4; --w2: #f3b25a; }
+    #tile.sym-light.st-warn { --w1: #f9b9bb; --w2: #ee7b7f; }
+    #tile.sym-light .wave { opacity: .9; }
+
+    #tile.sym-light .content { text-shadow: 0 0 6px rgba(255, 255, 255, .9), 0 0 2px rgba(255, 255, 255, .9); }
+    #tile.sym-light .ref { border-top-color: rgba(0, 0, 0, .3); }
+    #tile.sym-light .ref span, #tile.sym-light .staff .lbl { color: inherit; text-shadow: 0 0 4px rgba(255, 255, 255, .9); }
+    #tile.sym-light .chip { background: rgba(255, 255, 255, .65); color: inherit; }
+    #tile.sym-light .history polyline { stroke: rgba(0, 0, 0, .35); }
+    #tile.sym-light .ring .track { stroke: rgba(0, 0, 0, .12); }
+    #tile.sym-light .detail { background: rgba(246, 249, 252, .97); }
+    #tile.sym-light .d-stats div { background: rgba(0, 0, 0, .05); }
+    #tile.sym-light .d-close, #tile.sym-light .d-open { background: rgba(0, 0, 0, .08); color: inherit; }
+    #tile.sym-light .d-chart .grid { stroke: rgba(0, 0, 0, .1); }
+    #tile.sym-light .d-chart .refline { stroke: rgba(0, 0, 0, .4); }
+    #tile.theme-symcon .d-chart .line { stroke: var(--accent-color, #5fb4ff); }
+
+    /* Detailansicht: Objekt in der Visualisierung öffnen (Symcon 8.2+) */
+    .d-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex: none;
+    }
+
+    .d-open {
+        border: none;
+        border-radius: 999px;
+        padding: .3em .8em;
+        background: rgba(255, 255, 255, .12);
+        color: #fff;
+        font: inherit;
+        font-size: .75em;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    /* Unsichtbare Kachel: alle Animationen anhalten (spart Akku auf Wandtablets) */
+    #tile.paused *, #tile.paused *::before, #tile.paused *::after {
+        animation-play-state: paused !important;
+    }
+
+    /* Animationen reduzieren */
+    #tile.calm .star, #tile.calm .cloud, #tile.calm .boat, #tile.calm .boat .smoke circle,
+    #tile.calm .badge, #tile.calm .rwave {
+        animation: none !important;
+    }
+
+    #tile.calm .current, #tile.calm .rain, #tile.calm .boat .smoke {
+        display: none !important;
+    }
+
+    #tile.calm .wave.front, #tile.calm .wave.back {
+        animation-duration: 40s !important;
+    }
+
+    /* sehr flache Kacheln: Nebeninfos ausblenden */
+    @container (max-height: 110px) {
+        .waterbody, .bottom .left .muted { display: none; }
+        .d-stats { display: none; }
+    }
+
+    @container (max-width: 220px) {
+        .chip .txt, .ref span, #discharge, .insight, .chip.fc { display: none; }
+        .boat { display: none !important; }
+    }
+
+    @container (max-width: 150px) {
+        .staff .lbl { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .wave, .star, .current i, .rain i, .badge { animation: none !important; }
+    }
+</style>
+
+<div id="tile" class="st-nodata">
+    <div class="bg" id="bg"></div>
+    <div class="bgdim" id="bgdim"></div>
+    <div class="stars" id="stars"></div>
+    <div class="sun" id="sun"></div>
+    <div class="moon" id="moon"><svg viewBox="-12 -12 24 24"><circle r="10" fill="rgba(255,255,255,.10)"></circle><path id="moonLit" fill="#f6f2dc" d=""></path></svg></div>
+    <div class="clouds" id="clouds"></div>
+
+    <div class="water" id="water">
+        <div class="wave back"><svg viewBox="0 0 240 16" preserveAspectRatio="none"><path d="M0 8 Q 15 0 30 8 T 60 8 T 90 8 T 120 8 T 150 8 T 180 8 T 210 8 T 240 8 V16 H0 Z"></path></svg></div>
+        <div class="wave front"><svg viewBox="0 0 240 14" preserveAspectRatio="none"><path d="M0 7 Q 20 0 40 7 T 80 7 T 120 7 T 160 7 T 200 7 T 240 7 V14 H0 Z"></path></svg></div>
+        <div class="boat" id="boat">
+            <svg viewBox="0 0 60 40">
+                <g class="smoke"><circle cx="40" cy="6" r="3"></circle><circle cx="40" cy="6" r="3"></circle><circle cx="40" cy="6" r="3"></circle></g>
+                <rect x="37" y="8" width="5" height="10" rx="1" fill="#2b2f36"></rect>
+                <rect x="37" y="10" width="5" height="2" fill="#e5484d"></rect>
+                <path d="M16 14 h20 v9 h-20 z" fill="#f4f6f8"></path>
+                <rect x="19" y="16" width="3.5" height="3.5" rx=".8" fill="#5fb4ff"></rect>
+                <rect x="25" y="16" width="3.5" height="3.5" rx=".8" fill="#5fb4ff"></rect>
+                <rect x="31" y="16" width="3.5" height="3.5" rx=".8" fill="#5fb4ff"></rect>
+                <path d="M4 23 h52 l-6 11 h-40 z" fill="#c73a3f"></path>
+                <path d="M7 27 h46 l-1.2 2.2 h-43.6 z" fill="#f4f6f8"></path>
+                <g class="anchor">
+                    <path d="M8 26 C 6 32 7 38 9 44" stroke="#c9d3dc" stroke-width="1" fill="none" stroke-dasharray="1.5 1.2"></path>
+                    <path d="M9 44 v6 M6 47 h6 M5.5 49 q3.5 4 7 0" stroke="#c9d3dc" stroke-width="1.3" fill="none" stroke-linecap="round"></path>
+                </g>
+            </svg>
+        </div>
+        <div class="body"></div>
+        <div class="current" id="current"></div>
+        <div class="shine"></div>
+    </div>
+
+    <div class="rain" id="rain"></div>
+
+    <div class="refs" id="refs"></div>
+
+    <div class="history"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline id="hist" points=""></polyline></svg></div>
+
+    <div class="staff" id="staff"></div>
+
+    <div class="content">
+        <div>
+            <div class="station" id="station">Pegelstand</div>
+            <div class="waterbody" id="waterbody">&nbsp;</div>
+        </div>
+
+        <div>
+            <div class="main">
+                <span class="level" id="level">–</span><span class="unit">cm</span>
+            </div>
+            <div class="chips">
+                <span class="chip" id="trend" style="display:none"><span class="arrow" id="arrow">→</span><span class="txt" id="trendtxt"></span></span>
+                <span class="chip fc" id="forecast" style="display:none"></span>
+                <span class="chip ship" id="ship" style="display:none">⚓ <span data-t="Schifffahrt eingestellt">Schifffahrt eingestellt</span></span>
+            </div>
+            <div class="insight" id="insight"></div>
+        </div>
+
+        <div class="bottom">
+            <div class="left">
+                <span id="time" class="muted"></span>
+                <span id="discharge" class="muted"></span>
+            </div>
+            <div class="right">
+                <span class="badge" id="badge"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="ring" id="ring">
+        <svg viewBox="0 0 100 100">
+            <defs><clipPath id="rclip"><circle cx="50" cy="50" r="38"></circle></clipPath></defs>
+            <circle cx="50" cy="50" r="38" fill="rgba(0,0,0,.12)"></circle>
+            <g clip-path="url(#rclip)">
+                <g class="rwater" id="rwater">
+                    <path class="rwave" fill="var(--w1)" opacity=".55" d="M0 0 q10 -5 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 v120 h-140 z"></path>
+                    <path class="rwave" fill="var(--w1)" style="animation-duration:calc(var(--wspeed) * 1.6)" d="M0 3 q10 -4 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 v120 h-140 z"></path>
+                    <rect x="0" y="5" width="140" height="120" fill="var(--w2)" opacity=".55"></rect>
+                </g>
+            </g>
+            <circle class="track" cx="50" cy="50" r="45"></circle>
+            <circle class="prog" id="rprog" cx="50" cy="50" r="45" transform="rotate(135 50 50)"></circle>
+            <text class="rname" id="rname" x="50" y="30"></text>
+            <text class="rval" id="rval" x="50" y="58">–</text>
+            <text class="runit" x="50" y="67">cm</text>
+            <text class="rtrend" id="rtrend" x="50" y="80"></text>
+        </svg>
+    </div>
+
+    <div class="detail" id="detail">
+        <div class="d-head">
+            <div><span id="dTitle">Pegelstand</span> <small id="dRange"></small></div>
+            <div class="d-actions">
+                <button class="d-open" id="dOpen" style="display:none"><span data-t="Verlauf öffnen">Verlauf öffnen</span> ↗</button>
+                <button class="d-close" id="dClose" aria-label="Schließen">✕</button>
+            </div>
+        </div>
+        <div class="d-stats">
+            <div><span data-t="Jetzt">Jetzt</span><b id="dNow">–</b></div>
+            <div><span data-t="Min">Min</span><b id="dMin">–</b></div>
+            <div><span data-t="Max">Max</span><b id="dMax">–</b></div>
+            <div><span data-t="Diff">Diff</span><b id="dDelta">–</b></div>
+        </div>
+        <div class="d-chart" id="dChart"></div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+        var nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        var $ = function (id) { return document.getElementById(id); };
+        var last = null;
+        var shownLevel = null;
+        var countAnim = null;
+        var background = /*BACKGROUND*/null;
+
+        // Übersetzung über das HTML-SDK (locale.json), sonst Deutsch
+        function T(s) {
+            try {
+                return typeof window.translate === 'function' ? window.translate(s) : s;
+            } catch (e) {
+                return s;
+            }
+        }
+
+        function translateStatic(root) {
+            Array.prototype.forEach.call(root.querySelectorAll('[data-t]'), function (el) {
+                el.textContent = T(el.getAttribute('data-t'));
+            });
+        }
+
+        function fmtLevel(v) {
+            return Math.abs(v - Math.round(v)) < 0.05 ? nf0.format(v) : nf1.format(v);
+        }
+
+        function fmtTime(ts) {
+            var d = new Date(ts * 1000);
+            var now = new Date();
+            var time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            if (d.toDateString() === now.toDateString()) {
+                return time + ' ' + T('Uhr');
+            }
+            return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ', ' + time + ' ' + T('Uhr');
+        }
+
+        function fmtAxisTime(ts, spanHours) {
+            var d = new Date(ts * 1000);
+            if (spanHours > 48) {
+                return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+            }
+            return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function signed(v) {
+            return (v > 0 ? '+' : '') + nf1.format(v);
+        }
+
+        // ---------- Sonnenstand (vereinfachte Berechnung, genau genug für die Darstellung) ----------
+        function sunPosition(lat, lon, ms) {
+            var rad = Math.PI / 180;
+            var d = ms / 86400000 + 2440587.5 - 2451545.0;
+            var g = (357.529 + 0.98560028 * d) * rad;
+            var q = 280.459 + 0.98564736 * d;
+            var L = (q + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g)) * rad;
+            var e = (23.439 - 0.00000036 * d) * rad;
+            var ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L));
+            var dec = Math.asin(Math.sin(e) * Math.sin(L));
+            var gmst = (18.697374558 + 24.06570982441908 * d) % 24;
+            var ha = (gmst * 15 + lon) * rad - ra;
+            var phi = lat * rad;
+            var alt = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(ha));
+            // Azimut von Süden aus, negativ = Osten
+            var az = Math.atan2(Math.sin(ha), Math.cos(ha) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi));
+            return { alt: alt / rad, az: az / rad };
+        }
+
+        // ---------- Mondphase: 0 = Neumond, 0,5 = Vollmond ----------
+        function moonPhase(ms) {
+            var days = ms / 86400000 - 10962.76; // Neumond am 6.1.2000, 18:14 UTC
+            var p = (days / 29.530588853) % 1;
+            return p < 0 ? p + 1 : p;
+        }
+
+        function moonPath(p) {
+            var r = 10;
+            var k = Math.cos(2 * Math.PI * p);       // 1 = neu, -1 = voll
+            var rx = Math.abs(k) * r;
+            var waxing = p < 0.5;
+            var crescent = k > 0;
+            if (waxing) {
+                return 'M0 ' + (-r) + ' A' + r + ' ' + r + ' 0 0 1 0 ' + r + ' A' + rx.toFixed(2) + ' ' + r + ' 0 0 ' + (crescent ? 0 : 1) + ' 0 ' + (-r) + ' Z';
+            }
+            return 'M0 ' + (-r) + ' A' + r + ' ' + r + ' 0 0 0 0 ' + r + ' A' + rx.toFixed(2) + ' ' + r + ' 0 0 ' + (crescent ? 1 : 0) + ' 0 ' + (-r) + ' Z';
+        }
+
+        // Himmel: liefert die Klassen für Schema, Tageszeit und Himmelskörper
+        function skyClasses(d) {
+            var theme = d.theme || 0;
+            var classes = [];
+            var sky = d.sky !== false;
+            var now = Date.now();
+
+            if (theme === 3) {
+                // Symcon-Design: kein eigener Himmel, nur Sonne bzw. Mond und Wolken
+                classes.push('theme-symcon');
+                var p3 = sunPosition(typeof d.lat === 'number' ? d.lat : 51.0, typeof d.lon === 'number' ? d.lon : 10.0, now);
+                if (p3.alt <= -6) classes.push('night');
+                if (sky) {
+                    classes.push('show-clouds');
+                    if (p3.alt > -3) {
+                        classes.push('show-sun');
+                        $('sun').style.left = (50 + Math.max(-1, Math.min(1, p3.az / 110)) * 40).toFixed(1) + '%';
+                        $('sun').style.top = (44 - Math.max(0, Math.min(55, p3.alt)) / 55 * 34).toFixed(1) + '%';
+                    } else {
+                        classes.push('show-moon');
+                        placeMoon(now);
+                    }
+                }
+                return classes;
+            }
+            if (theme === 1) {
+                classes.push('theme-dark');
+                if (sky) classes.push('show-moon', 'show-clouds');
+                placeMoon(now);
+                return classes;
+            }
+            if (theme === 2) {
+                classes.push('theme-light');
+                if (sky) {
+                    classes.push('show-sun', 'show-clouds');
+                    $('sun').style.left = '80%';
+                    $('sun').style.top = '16%';
+                }
+                return classes;
+            }
+
+            // Natur: Himmel nach Sonnenstand am Ort der Station
+            var lat = typeof d.lat === 'number' ? d.lat : 51.0;
+            var lon = typeof d.lon === 'number' ? d.lon : 10.0;
+            var pos = sunPosition(lat, lon, now);
+            classes.push(pos.alt > 6 ? 'sky-day' : (pos.alt > -6 ? 'sky-dusk' : 'sky-night'));
+            if (sky) {
+                classes.push('show-clouds');
+                if (pos.alt > -3) {
+                    classes.push('show-sun');
+                    var x = 50 + Math.max(-1, Math.min(1, pos.az / 110)) * 40;
+                    var y = 44 - Math.max(0, Math.min(55, pos.alt)) / 55 * 34;
+                    $('sun').style.left = x.toFixed(1) + '%';
+                    $('sun').style.top = y.toFixed(1) + '%';
+                } else {
+                    classes.push('show-moon');
+                    placeMoon(now);
+                }
+            }
+            return classes;
+        }
+
+        function placeMoon(now) {
+            $('moonLit').setAttribute('d', moonPath(moonPhase(now)));
+            $('moon').style.left = '74%';
+            $('moon').style.top = '15%';
+        }
+
+        // ---------- einmalige Deko: Sterne, Wolken, Strömung, Regen ----------
+        function buildDecor() {
+            var s = '';
+            for (var i = 0; i < 40; i++) {
+                var size = Math.random() < 0.2 ? 3 : 2;
+                s += '<span class="star" style="left:' + (Math.random() * 100).toFixed(1) + '%;top:' + (Math.random() * 60).toFixed(1) +
+                    '%;width:' + size + 'px;height:' + size + 'px;animation-delay:' + (Math.random() * 3).toFixed(2) + 's"></span>';
+            }
+            $('stars').innerHTML = s;
+
+            var cloudPath = 'M10 30 a10 10 0 0 1 4 -19 a14 14 0 0 1 26 -4 a11 11 0 0 1 18 9 a8 8 0 0 1 -2 14 z';
+            var cl = '';
+            var conf = [[8, 70, -10], [24, 95, -55], [3, 120, -85]];
+            conf.forEach(function (c) {
+                cl += '<svg class="cloud" viewBox="0 0 60 32" style="top:' + c[0] + '%;animation-duration:' + c[1] + 's;animation-delay:' + c[2] + 's"><path d="' + cloudPath + '"></path></svg>';
+            });
+            $('clouds').innerHTML = cl;
+
+            var c = '';
+            for (var j = 0; j < 9; j++) {
+                c += '<i style="top:' + (8 + j * 10 + Math.random() * 4).toFixed(1) + '%;animation-delay:' + (Math.random() * 2.6).toFixed(2) +
+                    's;animation-duration:' + (2 + Math.random() * 1.4).toFixed(2) + 's"></i>';
+            }
+            $('current').innerHTML = c;
+
+            var r = '';
+            for (var k = 0; k < 45; k++) {
+                r += '<i style="left:' + (Math.random() * 100).toFixed(1) + '%;animation-delay:' + (Math.random() * 0.9).toFixed(2) +
+                    's;animation-duration:' + (0.6 + Math.random() * 0.5).toFixed(2) + 's"></i>';
+            }
+            $('rain').innerHTML = r;
+
+            if (background) {
+                $('bg').style.backgroundImage = 'url("' + background + '")';
+            }
+        }
+
+        // Dunkle Schriftfarbe der Visualisierung = helles Design
+        function isDarkText(el) {
+            var m = getComputedStyle(el).color.match(/\d+(\.\d+)?/g);
+            if (!m || m.length < 3) return false;
+            var lum = (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255;
+            return lum < 0.5;
+        }
+
+        // ---------- Wert hochzählen ----------
+        function countTo(target, el, ringEl) {
+            if (countAnim) cancelAnimationFrame(countAnim);
+            var from = shownLevel === null ? target : shownLevel;
+            var start = null;
+            var dur = Math.abs(target - from) < 0.05 ? 0 : 1200;
+            function step(ts) {
+                if (start === null) start = ts;
+                var t = dur === 0 ? 1 : Math.min(1, (ts - start) / dur);
+                var e = 1 - Math.pow(1 - t, 3);
+                var v = from + (target - from) * e;
+                var txt = t < 1 ? nf0.format(v) : fmtLevel(target);
+                el.textContent = txt;
+                ringEl.textContent = txt;
+                if (t < 1) {
+                    countAnim = requestAnimationFrame(step);
+                } else {
+                    shownLevel = target;
+                    countAnim = null;
+                }
+            }
+            countAnim = requestAnimationFrame(step);
+        }
+
+        // ---------- Pegel-Ring ----------
+        function useRing(d) {
+            var layout = d.layout || 0;
+            if (layout === 1) return false;
+            if (layout === 2) return true;
+            var t = $('tile');
+            return t.clientWidth < 190 && t.clientHeight < 190;
+        }
+
+        function renderRing(d) {
+            var refs = d.scaleRefs || {};
+            var hist = Array.isArray(d.history) ? d.history.map(function (p) { return p[1]; }) : [];
+            var lo = typeof refs.MNW === 'number' ? refs.MNW : (hist.length ? Math.min.apply(null, hist) - 20 : d.level - 50);
+            var hi = typeof refs.HSW === 'number' ? refs.HSW : (typeof refs.MHW === 'number' ? refs.MHW : (hist.length ? Math.max.apply(null, hist) + 20 : d.level + 50));
+            if (hi - lo < 10) hi = lo + 10;
+            var frac = Math.max(0, Math.min(1, (d.level - lo) / (hi - lo)));
+
+            // Bogen über 270°
+            var circ = 2 * Math.PI * 45;
+            var arc = circ * 0.75;
+            var prog = $('rprog');
+            prog.setAttribute('stroke-dasharray', arc.toFixed(1) + ' ' + circ.toFixed(1));
+            prog.setAttribute('stroke-dashoffset', (arc * (1 - frac)).toFixed(1));
+            $('rprog').style.strokeDasharray = arc.toFixed(1) + ' ' + circ.toFixed(1);
+
+            // Wasserspiegel im Kreis (Kreis reicht von y=12 bis y=88)
+            var y = 88 - frac * 76;
+            $('rwater').style.transform = 'translate(-20px,' + y.toFixed(1) + 'px)';
+
+            $('rname').textContent = (d.station || '').toLowerCase().replace(/(^|\s|-)\S/g, function (m) { return m.toUpperCase(); }).slice(0, 16);
+            $('rtrend').textContent = d.trend > 0 ? '↗' : (d.trend < 0 ? '↘' : (typeof d.trend === 'number' ? '→' : ''));
+        }
+
+        // ---------- Skala ----------
+        function makeScale(d) {
+            var values = [];
+            if (typeof d.level === 'number') values.push(d.level);
+            var refs = d.refs || {};
+            Object.keys(refs).forEach(function (k) { values.push(refs[k]); });
+            (Array.isArray(d.history) ? d.history : []).forEach(function (p) { values.push(p[1]); });
+
+            var lo = Math.min.apply(null, values.length ? values : [0]);
+            var hi = Math.max.apply(null, values.length ? values : [100]);
+            var span = Math.max(hi - lo, 20);
+            lo -= span * 0.25;
+            hi += span * 0.25;
+
+            // Der Wertebereich lo..hi liegt bei 18–82 % der Kachelhöhe
+            return {
+                raw: function (v) { return 18 + (v - lo) / (hi - lo) * 64; },
+                pct: function (v) { return Math.max(0, Math.min(100, 18 + (v - lo) / (hi - lo) * 64)); },
+                valueAt: function (p) { return lo + (p - 18) / 64 * (hi - lo); }
+            };
+        }
+
+        function niceStep(range, targetTicks) {
+            var raw = range / targetTicks;
+            var steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000];
+            for (var i = 0; i < steps.length; i++) {
+                if (steps[i] >= raw) return steps[i];
+            }
+            return 2000;
+        }
+
+        // ---------- Pegellatte ----------
+        function renderStaff(d, scale) {
+            var bottomV = scale.valueAt(0), topV = scale.valueAt(100);
+            var step = niceStep(topV - bottomV, 5);
+            var half = step / 2;
+            var html = '<div class="bar">';
+            // abwechselnde Blöcke wie bei einer echten Pegellatte
+            var startBlk = Math.floor(bottomV / half) * half;
+            for (var v = startBlk, i = Math.round(startBlk / half); v < topV; v += half, i++) {
+                if (i % 2 === 0) {
+                    var b = scale.raw(v), t = scale.raw(v + half);
+                    html += '<div class="blk' + (i % 4 === 0 ? '' : ' half') + '" style="bottom:' + b.toFixed(2) + '%;height:' + (t - b).toFixed(2) + '%"></div>';
+                }
+            }
+            html += '</div>';
+            var start = Math.ceil(bottomV / step) * step;
+            for (var m = start; m <= topV; m += step) {
+                var p = scale.raw(m);
+                if (p > 4 && p < 96) {
+                    html += '<span class="lbl" style="bottom:' + p.toFixed(2) + '%">' + nf0.format(m) + '</span>';
+                }
+            }
+            if (typeof d.level === 'number') {
+                html += '<div class="mark" style="bottom:' + scale.pct(d.level).toFixed(2) + '%"></div>';
+            }
+            $('staff').innerHTML = html;
+        }
+
+        // ---------- Detailansicht ----------
+        function renderDetail(d) {
+            var hist = Array.isArray(d.history) ? d.history : [];
+            $('dTitle').textContent = d.station ? d.station.toLowerCase() : T('Pegelstand');
+            $('dOpen').style.display = (typeof window.openObject === 'function' && d.openId) ? '' : 'none';
+            $('dNow').textContent = typeof d.level === 'number' ? nf0.format(d.level) + ' cm' : '–';
+
+            var chart = $('dChart');
+            if (hist.length < 2) {
+                $('dRange').textContent = '';
+                $('dMin').textContent = $('dMax').textContent = $('dDelta').textContent = '–';
+                chart.innerHTML = '<div class="d-empty">' + T('Kein Verlauf verfügbar – Verlaufslinie in der Instanz einschalten.') + '</div>';
+                return;
+            }
+
+            var vals = hist.map(function (p) { return p[1]; });
+            var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+            var t0 = hist[0][0], t1 = hist[hist.length - 1][0];
+            var spanH = (t1 - t0) / 3600;
+            $('dRange').textContent = T('letzte') + ' ' + (spanH >= 48 ? Math.round(spanH / 24) + ' ' + T('Tage') : Math.round(spanH) + ' ' + T('Std.'));
+            $('dMin').textContent = nf0.format(min) + ' cm';
+            $('dMax').textContent = nf0.format(max) + ' cm';
+            $('dDelta').textContent = signed(vals[vals.length - 1] - vals[0]) + ' cm';
+
+            // y-Bereich: Verlauf plus Kennwerte in der Nähe
+            var refs = d.refs || {};
+            var lo = min, hi = max;
+            var pad = Math.max((max - min) * 0.15, 5);
+            Object.keys(refs).forEach(function (k) {
+                if (refs[k] >= min - (max - min + 20) && refs[k] <= max + (max - min + 20)) {
+                    lo = Math.min(lo, refs[k]);
+                    hi = Math.max(hi, refs[k]);
+                }
+            });
+            lo -= pad;
+            hi += pad;
+            var step = niceStep(hi - lo, 4);
+            lo = Math.floor(lo / step) * step;
+            hi = Math.ceil(hi / step) * step;
+
+            var x = function (t) { return (t - t0) / Math.max(1, t1 - t0) * 100; };
+            var y = function (v) { return 100 - (v - lo) / (hi - lo) * 100; };
+
+            var pts = hist.map(function (p) { return x(p[0]).toFixed(2) + ',' + y(p[1]).toFixed(2); }).join(' ');
+            var svg = '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+                '<defs><linearGradient id="dArea" x1="0" y1="0" x2="0" y2="1">' +
+                '<stop offset="0" style="stop-color:var(--accent-color,#5fb4ff)" stop-opacity=".45"/><stop offset="1" style="stop-color:var(--accent-color,#5fb4ff)" stop-opacity="0"/></linearGradient></defs>';
+            var labels = '';
+            for (var g = lo; g <= hi + 0.001; g += step) {
+                svg += '<line class="grid" x1="0" x2="100" y1="' + y(g).toFixed(2) + '" y2="' + y(g).toFixed(2) + '"/>';
+                labels += '<span class="d-y" style="bottom:' + (100 - y(g)).toFixed(2) + '%">' + nf0.format(g) + '</span>';
+            }
+            Object.keys(refs).forEach(function (k) {
+                if (refs[k] >= lo && refs[k] <= hi) {
+                    svg += '<line class="refline' + (k === 'Warnung' ? ' warn' : '') + '" x1="0" x2="100" y1="' + y(refs[k]).toFixed(2) + '" y2="' + y(refs[k]).toFixed(2) + '"/>';
+                    labels += '<span class="d-r" style="bottom:' + (100 - y(refs[k])).toFixed(2) + '%">' + k + '</span>';
+                }
+            });
+            svg += '<polygon class="area" points="0,100 ' + pts + ' 100,100"/>';
+            svg += '<polyline class="line" points="' + pts + '"/></svg>';
+
+            var ticks = [t0, t0 + (t1 - t0) / 2, t1];
+            ticks.forEach(function (t, i) {
+                labels += '<span class="d-x' + (i === 0 ? ' first' : (i === 2 ? ' last' : '')) + '" style="left:' + x(t).toFixed(2) + '%">' + fmtAxisTime(t, spanH) + '</span>';
+            });
+
+            chart.innerHTML = svg + labels;
+        }
+
+        // ---------- Hauptdarstellung ----------
+        function render(d) {
+            last = d;
+            var tile = $('tile');
+            var hasLevel = typeof d.level === 'number';
+            var effects = d.effects !== false;
+
+            $('station').textContent = d.station ? d.station.toLowerCase() : T('Pegelstand');
+            $('waterbody').innerHTML = d.water ? d.water.toLowerCase() : '&nbsp;';
+            if (hasLevel) {
+                countTo(d.level, $('level'), $('rval'));
+            } else {
+                $('level').textContent = '–';
+                $('rval').textContent = '–';
+            }
+
+            var scale = makeScale(d);
+            $('water').style.height = (hasLevel ? scale.pct(d.level) : 35) + '%';
+
+            // Kennwert-Linien
+            var refs = d.refs || {};
+            var refHtml = '';
+            var keys = Object.keys(refs).sort(function (a, b) { return refs[a] - refs[b]; });
+            var below = {};
+            // Liegen zwei Linien dicht beieinander, kommt die Beschriftung der unteren unter ihre Linie
+            for (var i = 1; i < keys.length; i++) {
+                if (Math.abs(scale.pct(refs[keys[i]]) - scale.pct(refs[keys[i - 1]])) < 8 && !below[keys[i - 1]]) {
+                    below[keys[i - 1]] = true;
+                }
+            }
+            keys.forEach(function (k) {
+                var p = scale.pct(refs[k]);
+                refHtml += '<div class="ref' + (k === 'Warnung' ? ' warnline' : '') + '" style="bottom:' + p.toFixed(2) + '%"><span class="' + (below[k] ? 'l' : '') + '">' + k + ' ' + fmtLevel(refs[k]) + '</span></div>';
+            });
+            $('refs').innerHTML = refHtml;
+
+            // Verlaufslinie
+            var hist = Array.isArray(d.history) ? d.history : [];
+            if (hist.length > 1) {
+                var t0 = hist[0][0], t1 = hist[hist.length - 1][0];
+                var dt = Math.max(1, t1 - t0);
+                $('hist').setAttribute('points', hist.map(function (p) {
+                    return ((p[0] - t0) / dt * 100).toFixed(2) + ',' + (100 - scale.pct(p[1])).toFixed(2);
+                }).join(' '));
+            } else {
+                $('hist').setAttribute('points', '');
+            }
+
+            // Pegellatte
+            if (d.staff !== false && hasLevel) {
+                renderStaff(d, scale);
+            }
+
+            // Tendenz
+            var chip = $('trend');
+            if (typeof d.trend === 'number') {
+                chip.style.display = '';
+                var rot = d.trend > 0 ? -45 : (d.trend < 0 ? 45 : 0);
+                $('arrow').style.transform = 'rotate(' + rot + 'deg)';
+                var txt = T(d.trend > 0 ? 'steigend' : (d.trend < 0 ? 'fallend' : 'gleichbleibend'));
+                if (typeof d.change === 'number') {
+                    txt += ' · ' + signed(d.change) + ' cm / ' + d.trendHours + ' h';
+                }
+                $('trendtxt').textContent = txt;
+            } else {
+                chip.style.display = 'none';
+            }
+
+            // Prognose, Schifffahrt, Einordnung
+            var fc = $('forecast');
+            fc.style.display = d.forecast ? '' : 'none';
+            fc.textContent = d.forecast ? '⏱ ' + d.forecast : '';
+            $('ship').style.display = d.shipping === 'stopped' ? '' : 'none';
+            $('insight').textContent = d.insight || '';
+
+            // Strömung passend zur Tendenz
+            var speed = 8, speed2 = 13, amp = 1;
+            if (effects && d.trend > 0) { speed = 3.5; speed2 = 6; amp = 1.6; }
+            if (effects && d.trend < 0) { speed = 12; speed2 = 18; amp = 0.8; }
+            tile.style.setProperty('--wspeed', speed + 's');
+            tile.style.setProperty('--wspeed2', speed2 + 's');
+            tile.style.setProperty('--wamp', amp);
+
+            // Zeit und Abfluss
+            var stale = d.measuredAt && (Date.now() / 1000 - d.measuredAt) > 3 * 3600;
+            $('time').textContent = d.measuredAt ? fmtTime(d.measuredAt) + (stale ? ' · ' + T('veraltet') : '') : '';
+            $('discharge').textContent = typeof d.discharge === 'number' ? T('Abfluss') + ' ' + nf1.format(d.discharge) + ' m³/s' : '';
+
+            // Zustand / Warnung / Fehler
+            var badge = $('badge');
+            badge.className = 'badge';
+            if (d.error) {
+                badge.textContent = d.error;
+                badge.className = 'badge info show';
+            } else if (d.warning) {
+                badge.textContent = T('Hochwasser');
+                badge.className = 'badge show';
+            }
+
+            var state = 'st-nodata';
+            if (hasLevel && !stale) {
+                state = d.warning ? 'st-warn' : (d.state === 'high' ? 'st-high' : (d.state === 'low' ? 'st-low' : ''));
+            }
+
+            var classes = [state].concat(skyClasses(d));
+            if (paused) classes.push('paused');
+            if (d.calm) classes.push('calm');
+            if (d.staff !== false && hasLevel) classes.push('with-staff');
+            if (effects && d.trend > 0) classes.push('flow-up');
+            if (effects && d.warning) classes.push('raining');
+            if (d.boat !== false && hasLevel) classes.push('show-boat');
+            if (d.shipping === 'stopped') classes.push('anchored');
+            if (background) classes.push('has-bg');
+            if (hasLevel && useRing(d)) {
+                classes.push('layout-ring');
+                renderRing(d);
+            }
+            tile.className = classes.join(' ').trim();
+            if (classes.indexOf('theme-symcon') >= 0 && isDarkText(tile)) {
+                tile.classList.add('sym-light');
+            }
+            $('bgdim').style.opacity = ((d.bgDim || 0) / 100).toFixed(2);
+
+            if ($('detail').classList.contains('open')) {
+                renderDetail(d);
+            }
+        }
+
+        // ---------- Bedienung ----------
+        $('tile').addEventListener('click', function (ev) {
+            var detail = $('detail');
+            if ($('dOpen').contains(ev.target)) {
+                // Symcon 8.2+: Variable mit Verlauf in der Visualisierung öffnen
+                if (last && last.openId && typeof window.openObject === 'function') {
+                    window.openObject(last.openId);
+                }
+                return;
+            }
+            if (detail.contains(ev.target) && ev.target !== $('dClose')) {
+                return;
+            }
+            if (detail.classList.contains('open')) {
+                detail.classList.remove('open');
+            } else if (last) {
+                renderDetail(last);
+                detail.classList.add('open');
+            }
+        });
+
+        // Animationen anhalten, solange die Kachel nicht zu sehen ist
+        var paused = false, inView = true;
+        function updatePause() {
+            var p = document.hidden || !inView;
+            if (p !== paused) {
+                paused = p;
+                $('tile').classList.toggle('paused', p);
+            }
+        }
+        document.addEventListener('visibilitychange', updatePause);
+        if (window.IntersectionObserver) {
+            new IntersectionObserver(function (entries) {
+                inView = entries[0].isIntersecting;
+                updatePause();
+            }).observe($('tile'));
+        }
+
+        // Himmel alle 5 Minuten nachführen
+        setInterval(function () {
+            if (last && !paused) render(last);
+        }, 300000);
+
+        // Bei Größenänderung zwischen Szene und Ring umschalten
+        if (window.ResizeObserver) {
+            var lastRing = null;
+            new ResizeObserver(function () {
+                if (!last || typeof last.level !== 'number') return;
+                var r = useRing(last);
+                if (r !== lastRing) {
+                    lastRing = r;
+                    render(last);
+                }
+            }).observe($('tile'));
+        }
+
+        buildDecor();
+        translateStatic(document);
+
+        // Wird von IP-Symcon bei UpdateVisualizationValue() aufgerufen
+        window.handleMessage = function (data) {
+            try {
+                render(typeof data === 'string' ? JSON.parse(data) : data);
+            } catch (e) {
+                console.error('Pegelstand-Kachel:', e);
+            }
+        };
+
+        var initial = /*INITIAL_DATA*/null;
+        if (initial) {
+            window.handleMessage(initial);
+        }
+    })();
+</script>

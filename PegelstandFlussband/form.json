@@ -1,0 +1,112 @@
+{
+    "elements": [
+        {
+            "type": "Select",
+            "name": "Water",
+            "caption": "Gewässer",
+            "width": "400px",
+            "options": []
+        },
+        {
+            "type": "RowLayout",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "KmFrom",
+                    "caption": "von Fluss-km",
+                    "digits": 1,
+                    "minimum": 0
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "KmTo",
+                    "caption": "bis Fluss-km (0 = bis zum Ende)",
+                    "digits": 1,
+                    "minimum": 0
+                }
+            ]
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "MaxStations",
+            "caption": "Höchstens so viele Stationen anzeigen",
+            "minimum": 2,
+            "maximum": 30
+        },
+        {
+            "type": "CheckBox",
+            "name": "HideLockUpper",
+            "caption": "Schleusen-Oberpegel (OP) ausblenden – sie sind staugeregelt und zeigen keine Welle"
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "Interval",
+            "caption": "Abfrageintervall",
+            "suffix": "Minuten",
+            "minimum": 5,
+            "maximum": 1440
+        },
+        {
+            "type": "Select",
+            "name": "TileTheme",
+            "caption": "Farbschema der Kachel",
+            "options": [
+                {
+                    "caption": "Symcon-Design – Farben der Visualisierung",
+                    "value": 2
+                },
+                {
+                    "caption": "Dunkel",
+                    "value": 0
+                },
+                {
+                    "caption": "Hell",
+                    "value": 1
+                }
+            ]
+        },
+        {
+            "type": "CheckBox",
+            "name": "TileReduceMotion",
+            "caption": "Animationen reduzieren (für ältere Wandtablets)"
+        },
+        {
+            "type": "Label",
+            "caption": "Jede Säule zeigt den Pegel relativ zu den eigenen Kennwerten der Station: unten mittleres Niedrigwasser (MNW), oben mittleres Hochwasser (MHW). So sind Stationen mit ganz unterschiedlichen Pegelnullpunkten vergleichbar und eine Hochwasserwelle wird sichtbar."
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Jetzt aktualisieren",
+            "onClick": "PEGELFB_Update($id);"
+        },
+        {
+            "type": "Button",
+            "caption": "Gewässerliste neu laden",
+            "onClick": "IPS_RequestAction($id, 'ReloadWaters', '');"
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Flussband wird aktualisiert"
+        },
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Bitte ein Gewässer auswählen"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "PEGELONLINE nicht erreichbar oder fehlerhafte Antwort"
+        },
+        {
+            "code": 202,
+            "icon": "error",
+            "caption": "Keine Stationen mit Wasserstand im gewählten Abschnitt"
+        }
+    ]
+}

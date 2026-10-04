@@ -1,0 +1,505 @@
+<!--
+    Kachel für das Modul "Pegelstand Flussband" (IP-Symcon HTML-SDK)
+    Copyright (c) 2026 Armin Frohwerk · MIT-Lizenz (siehe LICENSE)
+    SPDX-License-Identifier: MIT
+-->
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: transparent;
+    }
+
+    #fb {
+        --bg1: #0b1724;
+        --bg2: #13283c;
+        --fg: #fff;
+        --muted: rgba(255, 255, 255, .65);
+        --line: rgba(255, 255, 255, .28);
+        --w1: #3b9be0;
+        --w2: #0b4a86;
+        position: relative;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+        container-type: size;
+        display: flex;
+        flex-direction: column;
+        padding: clamp(8px, 4cqmin, 16px);
+        gap: clamp(4px, 2cqmin, 8px);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(180deg, var(--bg1), var(--bg2));
+        border-radius: inherit;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    #fb.light {
+        --bg1: #eef6fc;
+        --bg2: #d8e9f5;
+        --fg: #12304a;
+        --muted: rgba(18, 48, 74, .65);
+        --line: rgba(18, 48, 74, .3);
+    }
+
+    /* Symcon-Design: Farben und Schrift der gewählten Visualisierung */
+    #fb.symcon {
+        --bg1: transparent;
+        --bg2: transparent;
+        --fg: var(--content-color, #fff);
+        --muted: color-mix(in srgb, var(--content-color, #fff) 65%, transparent);
+        --line: color-mix(in srgb, var(--content-color, #fff) 30%, transparent);
+        --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 80%, #fff);
+        --w2: color-mix(in srgb, var(--accent-color, #3b9be0) 70%, #000);
+    }
+
+    #fb.symcon.sym-light .wave polyline,
+    #fb.light .wave polyline {
+        stroke: rgba(0, 0, 0, .45);
+    }
+
+    .open {
+        margin-left: 6px;
+        border: none;
+        border-radius: 999px;
+        padding: .1em .7em;
+        background: color-mix(in srgb, var(--fg) 14%, transparent);
+        color: var(--fg);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .title {
+        font-size: clamp(12px, 6cqmin, 20px);
+        font-weight: 650;
+        text-transform: capitalize;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .sub {
+        font-size: clamp(9px, 3.6cqmin, 12px);
+        color: var(--muted);
+        white-space: nowrap;
+    }
+
+    .info {
+        min-height: 1.3em;
+        font-size: clamp(9px, 3.8cqmin, 13px);
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .info {
+        display: flex;
+        align-items: center;
+    }
+
+    .info .txt {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .open {
+        flex: none;
+    }
+
+    .info b {
+        color: var(--fg);
+    }
+
+    .chart {
+        position: relative;
+        flex: 1;
+        min-height: 40px;
+        margin-left: 30px;
+    }
+
+    .hline {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 1px dashed var(--line);
+    }
+
+    .hline span {
+        position: absolute;
+        right: calc(100% + 4px);
+        transform: translateY(-50%);
+        font-size: clamp(8px, 3cqmin, 10px);
+        font-weight: 600;
+        color: var(--muted);
+    }
+
+    .cols {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        gap: clamp(2px, 1.2cqmin, 6px);
+    }
+
+    .col {
+        position: relative;
+        flex: 1;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .col .fill {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 3px 3px 0 0;
+        background: linear-gradient(180deg, var(--c1, var(--w1)), var(--c2, var(--w2)));
+        transition: height 1.4s cubic-bezier(.25, .8, .25, 1);
+        overflow: hidden;
+    }
+
+    .col .fill::before {
+        content: "";
+        position: absolute;
+        left: -50%;
+        top: -3px;
+        width: 200%;
+        height: 6px;
+        background: radial-gradient(ellipse at center, rgba(255, 255, 255, .45) 0%, transparent 70%);
+        animation: shimmer 4s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+        0%, 100% { transform: translateX(-10%); }
+        50%      { transform: translateX(10%); }
+    }
+
+    .col.approx .fill {
+        opacity: .75;
+        background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .12) 0 4px, transparent 4px 8px), linear-gradient(180deg, var(--c1, var(--w1)), var(--c2, var(--w2)));
+    }
+
+    .col.nodata .fill {
+        --c1: #6b7a86;
+        --c2: #3a4650;
+    }
+
+    .col.low    { --c1: #6cc3e6; --c2: #2a74a3; }
+    .col.high   { --c1: #f5ad3c; --c2: #b0561a; }
+    .col.warn   { --c1: #ef5a5f; --c2: #8c1c22; }
+    .col.stale .fill { filter: grayscale(.8); }
+
+    .col.sel .fill {
+        box-shadow: 0 0 0 2px var(--fg);
+    }
+
+    .col .val {
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%, -2px);
+        font-size: clamp(8px, 3.4cqmin, 12px);
+        font-weight: 700;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+        transition: bottom 1.4s cubic-bezier(.25, .8, .25, 1);
+    }
+
+    .col .val i {
+        font-style: normal;
+        font-weight: 600;
+        opacity: .8;
+    }
+
+    .col .hsw {
+        position: absolute;
+        left: -1px;
+        right: -1px;
+        border-top: 2px solid #ff6b6b;
+    }
+
+    .wave {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: visible;
+    }
+
+    .wave polyline {
+        fill: none;
+        stroke: rgba(255, 255, 255, .8);
+        stroke-width: 1.5;
+        stroke-dasharray: 3 2;
+        vector-effect: non-scaling-stroke;
+    }
+
+    #fb.light .wave polyline {
+        stroke: rgba(18, 48, 74, .6);
+    }
+
+    .names {
+        display: flex;
+        gap: clamp(2px, 1.2cqmin, 6px);
+        margin-left: 30px;
+        height: clamp(14px, 12cqh, 42px);
+    }
+
+    .names span {
+        flex: 1;
+        min-width: 0;
+        font-size: clamp(8px, 3.2cqmin, 11px);
+        color: var(--muted);
+        text-transform: capitalize;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .names.rot {
+        height: clamp(20px, 22cqh, 70px);
+    }
+
+    .names.rot span {
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .foot {
+        display: flex;
+        justify-content: space-between;
+        font-size: clamp(8px, 3.2cqmin, 11px);
+        color: var(--muted);
+    }
+
+    .empty {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: clamp(10px, 4.5cqmin, 14px);
+    }
+
+    @container (max-height: 160px) {
+        .info, .foot { display: none; }
+    }
+
+    #fb.paused *, #fb.paused *::before, #fb.paused *::after {
+        animation-play-state: paused !important;
+    }
+
+    #fb.calm .col .fill::before {
+        animation: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .col .fill::before { animation: none; }
+    }
+</style>
+
+<div id="fb">
+    <div class="head">
+        <div class="title" id="title">Flussband</div>
+        <div class="sub" id="sub"></div>
+    </div>
+    <div class="info" id="info" data-t="Säule antippen für Details">Säule antippen für Details</div>
+    <div class="chart" id="chart"></div>
+    <div class="names" id="names"></div>
+    <div class="foot"><span id="dir"><span data-t="Fließrichtung">Fließrichtung</span> →</span><span id="upd"></span></div>
+</div>
+
+<script>
+    (function () {
+        var nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+        var nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        var $ = function (id) { return document.getElementById(id); };
+        var last = null;
+        var selected = -1;
+
+        // gemeinsame Skala: rel -0,3 … 1,5 (0 = MNW, 1 = MHW)
+        var LO = -0.3, HI = 1.5;
+        function pos(rel) {
+            return Math.max(0, Math.min(100, (rel - LO) / (HI - LO) * 100));
+        }
+
+        // Dunkle Schriftfarbe der Visualisierung = helles Design
+        function isDarkText(el) {
+            var m = getComputedStyle(el).color.match(/\d+(\.\d+)?/g);
+            if (!m || m.length < 3) return false;
+            return (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255 < 0.5;
+        }
+
+        // Übersetzung über das HTML-SDK (locale.json), sonst Deutsch
+        function T(s) {
+            try {
+                return typeof window.translate === 'function' ? window.translate(s) : s;
+            } catch (e) {
+                return s;
+            }
+        }
+
+        function translateStatic(root) {
+            Array.prototype.forEach.call(root.querySelectorAll('[data-t]'), function (el) {
+                el.textContent = T(el.getAttribute('data-t'));
+            });
+        }
+
+        function nice(s) {
+            return (s || '').toLowerCase();
+        }
+
+        function describe(s) {
+            var parts = ['<b>' + nice(s.name).replace(/(^|\s|-)\S/g, function (m) { return m.toUpperCase(); }) + '</b>'];
+            if (typeof s.km === 'number') parts.push('km ' + nf1.format(s.km));
+            parts.push(nf0.format(s.level) + ' cm');
+            var c = s.cvs || {};
+            if (typeof c.MW === 'number') {
+                var d = s.level - c.MW;
+                parts.push(Math.abs(d) < 3 ? T('etwa auf MW') : nf0.format(Math.abs(d)) + ' ' + T(d > 0 ? 'cm über MW' : 'cm unter MW'));
+            }
+            if (typeof s.diff === 'number') parts.push((s.diff > 0 ? '+' : '') + nf1.format(s.diff) + ' ' + T('cm in den letzten Std.'));
+            if (s.warn) parts.push(T('Schifffahrt eingestellt'));
+            if (s.approx && s.rel !== null) parts.push(T('Lage geschätzt'));
+            var html = '<span class="txt">' + parts.join(' · ') + '</span>';
+            // Symcon 8.2+: angelegte Pegelstand-Instanz direkt öffnen
+            if (s.open && typeof window.openObject === 'function') {
+                html += '<button class="open" data-open="' + s.open + '">' + T('Öffnen') + ' ↗</button>';
+            }
+            return html;
+        }
+
+        function render(d) {
+            last = d;
+            var fb = $('fb');
+            fb.className = d.theme === 1 ? 'light' : (d.theme === 2 ? 'symcon' : '');
+            if (d.theme === 2 && isDarkText(fb)) {
+                fb.classList.add('sym-light');
+            }
+            if (d.calm) fb.classList.add('calm');
+            if (paused) fb.classList.add('paused');
+            $('title').textContent = nice(d.water) || T('Flussband');
+
+            var st = Array.isArray(d.stations) ? d.stations : [];
+            if (st.length === 0) {
+                $('sub').textContent = '';
+                $('chart').innerHTML = '<div class="empty">' + (d.error || T('Keine Daten')) + '</div>';
+                $('names').innerHTML = '';
+                return;
+            }
+
+            var first = st[0], lastSt = st[st.length - 1];
+            $('sub').textContent = st.length + ' ' + T('Stationen') + (typeof first.km === 'number' && typeof lastSt.km === 'number'
+                ? ' · km ' + nf0.format(first.km) + '–' + nf0.format(lastSt.km) : '');
+
+            var html = '';
+            html += '<div class="hline" style="bottom:' + pos(0) + '%"><span>MNW</span></div>';
+            html += '<div class="hline" style="bottom:' + pos(0.5) + '%;opacity:.5"><span>MW</span></div>';
+            html += '<div class="hline" style="bottom:' + pos(1) + '%"><span>MHW</span></div>';
+            html += '<div class="cols">';
+            var pts = [];
+            st.forEach(function (s, i) {
+                var cls = ['col'];
+                var rel = s.rel;
+                if (rel === null || typeof rel !== 'number') {
+                    cls.push('nodata');
+                    rel = 0.5;
+                } else if (s.warn) {
+                    cls.push('warn');
+                } else if (rel >= 1 || s.state === 'high') {
+                    cls.push('high');
+                } else if (rel <= 0 || s.state === 'low') {
+                    cls.push('low');
+                }
+                if (s.approx) cls.push('approx');
+                if (s.stale) cls.push('stale');
+                if (i === selected) cls.push('sel');
+                var p = pos(rel);
+                var arrow = typeof s.diff === 'number' ? (s.diff >= 2 ? ' <i>↗</i>' : (s.diff <= -2 ? ' <i>↘</i>' : '')) : '';
+                html += '<div class="' + cls.join(' ') + '" data-i="' + i + '">';
+                html += '<div class="fill" style="height:' + p.toFixed(2) + '%"></div>';
+                if (typeof s.hswRel === 'number') {
+                    html += '<div class="hsw" style="bottom:' + pos(s.hswRel).toFixed(2) + '%" title="HSW"></div>';
+                }
+                html += '<div class="val" style="bottom:' + p.toFixed(2) + '%">' + nf0.format(s.level) + arrow + '</div>';
+                html += '</div>';
+                pts.push([(i + 0.5) / st.length * 100, 100 - p]);
+            });
+            html += '</div>';
+            html += '<svg class="wave" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="' +
+                pts.map(function (q) { return q[0].toFixed(2) + ',' + q[1].toFixed(2); }).join(' ') + '"></polyline></svg>';
+            $('chart').innerHTML = html;
+
+            var names = $('names');
+            names.className = 'names' + ($('chart').clientWidth / st.length < 56 ? ' rot' : '');
+            names.innerHTML = st.map(function (s) { return '<span>' + nice(s.name) + '</span>'; }).join('');
+
+            $('upd').textContent = d.updated ? new Date(d.updated * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' ' + T('Uhr') : '';
+            $('info').innerHTML = selected >= 0 && st[selected] ? describe(st[selected]) : T('Säule antippen für Details');
+        }
+
+        $('fb').addEventListener('click', function (ev) {
+            var btn = ev.target.closest ? ev.target.closest('[data-open]') : null;
+            if (btn) {
+                window.openObject(parseInt(btn.getAttribute('data-open'), 10));
+                return;
+            }
+            var col = ev.target.closest ? ev.target.closest('.col') : null;
+            selected = col ? (parseInt(col.getAttribute('data-i'), 10) === selected ? -1 : parseInt(col.getAttribute('data-i'), 10)) : -1;
+            if (last) render(last);
+        });
+
+        // Animationen anhalten, solange die Kachel nicht zu sehen ist
+        var paused = false, inView = true;
+        function updatePause() {
+            paused = document.hidden || !inView;
+            $('fb').classList.toggle('paused', paused);
+        }
+        document.addEventListener('visibilitychange', updatePause);
+        if (window.IntersectionObserver) {
+            new IntersectionObserver(function (entries) {
+                inView = entries[0].isIntersecting;
+                updatePause();
+            }).observe($('fb'));
+        }
+
+        if (window.ResizeObserver) {
+            new ResizeObserver(function () { if (last) render(last); }).observe($('fb'));
+        }
+
+        translateStatic(document);
+
+        // Wird von IP-Symcon bei UpdateVisualizationValue() aufgerufen
+        window.handleMessage = function (data) {
+            try {
+                render(typeof data === 'string' ? JSON.parse(data) : data);
+            } catch (e) {
+                console.error('Flussband-Kachel:', e);
+            }
+        };
+
+        var initial = /*INITIAL_DATA*/null;
+        if (initial) {
+            window.handleMessage(initial);
+        }
+    })();
+</script>

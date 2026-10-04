@@ -1,0 +1,15 @@
+{
+    "id": "{357D9512-5653-4253-8279-DA569FEB0E1E}",
+    "name": "Pegelstand",
+    "type": 3,
+    "vendor": "PEGELONLINE (WSV)",
+    "aliases": [
+        "Pegelstand",
+        "Wasserstand",
+        "Pegelstandsanzeige"
+    ],
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "PEGEL"
+}

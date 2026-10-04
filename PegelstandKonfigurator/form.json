@@ -1,0 +1,89 @@
+{
+    "elements": [
+        {
+            "type": "ValidationTextBox",
+            "name": "WaterFilter",
+            "caption": "Gewässer-Filter (z. B. Rhein, Elbe – leer = alle)"
+        },
+        {
+            "type": "NumberSpinner",
+            "name": "MaxDistance",
+            "caption": "Umkreis um meinen Standort (0 = alle)",
+            "suffix": "km",
+            "minimum": 0,
+            "maximum": 1000
+        },
+        {
+            "type": "Label",
+            "caption": "Filter mit „Änderungen übernehmen“ anwenden. Bereits angelegte Stationen werden immer angezeigt. Mit Standort in Symcon wird nach Entfernung sortiert."
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Liste und Pegel neu laden",
+            "onClick": "IPS_RequestAction($id, 'Reload', '');"
+        },
+        {
+            "type": "Label",
+            "caption": "Die Liste wird 10 Minuten zwischengespeichert, damit das Formular schnell öffnet."
+        },
+        {
+            "type": "Configurator",
+            "name": "Stations",
+            "caption": "Messstationen (PEGELONLINE)",
+            "rowCount": 20,
+            "add": false,
+            "delete": true,
+            "sort": {
+                "column": "water",
+                "direction": "ascending"
+            },
+            "columns": [
+                {
+                    "caption": "Station",
+                    "name": "name",
+                    "width": "auto"
+                },
+                {
+                    "caption": "Gewässer",
+                    "name": "water",
+                    "width": "180px"
+                },
+                {
+                    "caption": "Entfernung (km)",
+                    "name": "distance",
+                    "width": "130px"
+                },
+                {
+                    "caption": "Pegel aktuell",
+                    "name": "level",
+                    "width": "130px"
+                },
+                {
+                    "caption": "Fluss-km",
+                    "name": "km",
+                    "width": "90px"
+                },
+                {
+                    "caption": "Betreiber",
+                    "name": "agency",
+                    "width": "220px"
+                }
+            ],
+            "values": []
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Stationsliste geladen"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "PEGELONLINE nicht erreichbar oder fehlerhafte Antwort"
+        }
+    ]
+}

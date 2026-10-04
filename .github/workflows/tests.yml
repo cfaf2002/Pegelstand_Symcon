@@ -1,0 +1,40 @@
+# Prüft das Modul bei jedem Push und Pull-Request.
+# SPDX-License-Identifier: MIT
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 8.3 entspricht älteren Symcon-Versionen, 8.5 ist in Symcon 9.0 enthalten
+        php: ['8.3', '8.5']
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: PHP einrichten
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, gd, mbstring, fileinfo
+          coverage: none
+
+      - name: PHP-Syntax prüfen
+        run: find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
+
+      - name: JSON-Dateien prüfen
+        run: |
+          for f in library.json */module.json */form.json */locale.json; do
+            php -r 'json_decode(file_get_contents($argv[1]), flags: JSON_THROW_ON_ERROR);' "$f" || { echo "Ungültig: $f"; exit 1; }
+          done
+
+      - name: Tests ausführen
+        run: php tests/run.php

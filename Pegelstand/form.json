@@ -1,0 +1,344 @@
+{
+    "elements": [
+        {
+            "type": "ExpansionPanel",
+            "caption": "Messstation",
+            "expanded": true,
+            "items": [
+                {
+                    "type": "ValidationTextBox",
+                    "name": "WaterFilter",
+                    "caption": "Gewässer-Filter (z. B. Rhein, Elbe – leer = alle)"
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "Button",
+                            "caption": "Filter anwenden",
+                            "onClick": "IPS_RequestAction($id, 'FilterStations', $WaterFilter);"
+                        },
+                        {
+                            "type": "Button",
+                            "caption": "Stationsliste neu laden",
+                            "onClick": "IPS_RequestAction($id, 'ReloadStations', $WaterFilter);"
+                        }
+                    ]
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "SortByDistance",
+                    "caption": "Nach Entfernung zu meinem Standort sortieren"
+                },
+                {
+                    "type": "Select",
+                    "name": "StationUUID",
+                    "caption": "Messstation",
+                    "width": "600px",
+                    "options": []
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Aktualisierung & Tendenz",
+            "items": [
+                {
+                    "type": "NumberSpinner",
+                    "name": "Interval",
+                    "caption": "Messtakt der Station",
+                    "suffix": "Minuten",
+                    "minimum": 5,
+                    "maximum": 1440
+                },
+                {
+                    "type": "Label",
+                    "caption": "Abgefragt wird kurz nach dem erwarteten neuen Messwert. Ist er noch nicht da, wird nach 3 Minuten erneut nachgesehen. Neu gerechnet wird nur bei neuen Werten."
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "TrendHours",
+                    "caption": "Zeitraum für die Tendenz",
+                    "suffix": "Stunden",
+                    "minimum": 1,
+                    "maximum": 48
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "TrendThreshold",
+                    "caption": "Schwelle für steigend/fallend",
+                    "suffix": "cm",
+                    "digits": 1,
+                    "minimum": 0
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Zusatzfunktionen",
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "ShowTimestamp",
+                    "caption": "Zeitpunkt der Messung anzeigen"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowStationInfo",
+                    "caption": "Stationsinfos anzeigen (Gewässer, Station, Fluss-km, Pegelnullpunkt)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowCharacteristics",
+                    "caption": "Kennwerte anzeigen (MNW, MW, MHW, HSW … – je nach Station)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowFloodWarning",
+                    "caption": "Zustand und Hochwasserwarnung anzeigen"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "WarnLevel",
+                    "caption": "Eigene Warnschwelle (0 = nur HSW der WSV)",
+                    "suffix": "cm",
+                    "minimum": 0
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowDischarge",
+                    "caption": "Abfluss (Q) anzeigen – nur bei Stationen mit Abflussmessung"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowInsights",
+                    "caption": "Einordnung und Prognose als Variablen anlegen (z. B. „23 cm unter Mittelwasser“, „Warnschwelle in ca. 6 Std.“)"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Benachrichtigungen",
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "NotifyEnabled",
+                    "caption": "Push-Nachricht bei Hochwasserwarnung senden"
+                },
+                {
+                    "type": "SelectInstance",
+                    "name": "NotifyTarget",
+                    "caption": "Visualisierung (Kachel-Visualisierung oder WebFront)",
+                    "width": "400px"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "NotifyHysteresis",
+                    "caption": "Hysterese für die Entwarnung",
+                    "suffix": "cm",
+                    "digits": 1,
+                    "minimum": 0
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "NotifyClear",
+                    "caption": "Auch bei Entwarnung benachrichtigen"
+                },
+                {
+                    "type": "Label",
+                    "caption": "Ausgelöst wird bei „über HSW“ laut WSV oder ab der eigenen Warnschwelle (Zusatzfunktionen). Entwarnung erst, wenn der Pegel um die Hysterese darunter liegt."
+                },
+                {
+                    "type": "Button",
+                    "caption": "Testnachricht senden",
+                    "onClick": "PEGEL_TestNotification($id);"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Archiv",
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "ArchiveEnabled",
+                    "caption": "Pegelstand (und Abfluss) archivieren und Verlauf beim ersten Abruf nachladen"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "ArchiveBackfillDays",
+                    "caption": "Nachladen der letzten",
+                    "suffix": "Tage",
+                    "minimum": 1,
+                    "maximum": 30
+                },
+                {
+                    "type": "Button",
+                    "caption": "Verlauf jetzt ins Archiv nachladen",
+                    "onClick": "$n = PEGEL_BackfillArchive($id); echo $n >= 0 ? $n . ' Werte nachgeladen.' : 'Nachladen fehlgeschlagen (siehe Debug).';"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Kachel",
+            "items": [
+                {
+                    "type": "CheckBox",
+                    "name": "UseTile",
+                    "caption": "Eigene Kachel mit Wasser-Animation verwenden"
+                },
+                {
+                    "type": "Select",
+                    "name": "TileTheme",
+                    "caption": "Farbschema",
+                    "options": [
+                        {
+                            "caption": "Symcon-Design – Farben der Visualisierung",
+                            "value": 3
+                        },
+                        {
+                            "caption": "Natur – Himmel nach Tageszeit",
+                            "value": 0
+                        },
+                        {
+                            "caption": "Dunkel",
+                            "value": 1
+                        },
+                        {
+                            "caption": "Hell",
+                            "value": 2
+                        }
+                    ]
+                },
+                {
+                    "type": "Select",
+                    "name": "TileLayout",
+                    "caption": "Darstellung",
+                    "options": [
+                        {
+                            "caption": "Automatisch (Ring bei kleinen Kacheln)",
+                            "value": 0
+                        },
+                        {
+                            "caption": "Immer Szene mit Wasser",
+                            "value": 1
+                        },
+                        {
+                            "caption": "Immer Pegel-Ring",
+                            "value": 2
+                        }
+                    ]
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "SelectMedia",
+                            "name": "TileBackground",
+                            "caption": "Eigenes Hintergrundbild (optional)"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "TileBackgroundDim",
+                            "caption": "Abdunkeln",
+                            "suffix": "%",
+                            "minimum": 0,
+                            "maximum": 90
+                        }
+                    ]
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TileShowRefs",
+                    "caption": "Kennwert-Linien (MNW, MW, MHW, HSW, eigene Warnschwelle) einzeichnen"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TileShowHistory",
+                    "caption": "Verlaufslinie im Hintergrund anzeigen"
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "TileHistoryHours",
+                    "caption": "Zeitraum der Verlaufslinie",
+                    "suffix": "Stunden",
+                    "minimum": 1,
+                    "maximum": 720
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TileShowStaff",
+                    "caption": "Pegellatte mit cm-Skala am Rand"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TileEffects",
+                    "caption": "Strömung passend zur Tendenz, Regen bei Hochwasser"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TileSkyObjects",
+                    "caption": "Sonne, Mond (mit echter Mondphase) und ziehende Wolken"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TileShowBoat",
+                    "caption": "Schiff auf dem Wasser (vor Anker, wenn die Schifffahrt über HSW eingestellt ist)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TileShowInsights",
+                    "caption": "Einordnung in Worten und Prognose in der Kachel"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "TileReduceMotion",
+                    "caption": "Animationen reduzieren (für ältere Wandtablets)"
+                },
+                {
+                    "type": "Label",
+                    "caption": "Antippen der Kachel öffnet die Detailansicht mit Diagramm, Min/Max und Kennwerten."
+                }
+            ]
+        }
+    ],
+    "actions": [
+        {
+            "type": "Button",
+            "caption": "Jetzt aktualisieren",
+            "onClick": "PEGEL_Update($id);"
+        },
+        {
+            "type": "Label",
+            "caption": "Mehrere Stationen: pro Station eine Instanz anlegen – am bequemsten über den „Pegelstand Konfigurator“."
+        }
+    ],
+    "status": [
+        {
+            "code": 102,
+            "icon": "active",
+            "caption": "Pegelstand wird abgefragt"
+        },
+        {
+            "code": 104,
+            "icon": "inactive",
+            "caption": "Bitte eine Messstation auswählen"
+        },
+        {
+            "code": 201,
+            "icon": "error",
+            "caption": "PEGELONLINE nicht erreichbar oder fehlerhafte Antwort"
+        },
+        {
+            "code": 202,
+            "icon": "error",
+            "caption": "Messstation nicht gefunden"
+        },
+        {
+            "code": 203,
+            "icon": "error",
+            "caption": "Station liefert keinen aktuellen Wasserstand"
+        }
+    ]
+}
