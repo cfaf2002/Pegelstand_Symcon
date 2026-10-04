@@ -84,6 +84,7 @@ class Pegelstand extends IPSModuleStrict
         $this->RegisterPropertyInteger('TileLayout', 0);
         $this->RegisterPropertyBoolean('TileSkyObjects', true);
         $this->RegisterPropertyBoolean('TileShowBoat', true);
+        $this->RegisterPropertyBoolean('TileShowFish', true);
         $this->RegisterPropertyBoolean('TileShowInsights', true);
         $this->RegisterPropertyInteger('TileBackground', 0);
         $this->RegisterPropertyInteger('TileBackgroundDim', 35);
@@ -408,6 +409,7 @@ class Pegelstand extends IPSModuleStrict
             'layout'       => $this->ReadPropertyInteger('TileLayout'),
             'sky'          => $this->ReadPropertyBoolean('TileSkyObjects'),
             'boat'         => $this->ReadPropertyBoolean('TileShowBoat'),
+            'fish'         => $this->ReadPropertyBoolean('TileShowFish'),
             'effects'      => $this->ReadPropertyBoolean('TileEffects'),
             'bgDim'        => min(90, max(0, $this->ReadPropertyInteger('TileBackgroundDim'))),
             'openId'       => $this->VariableID('Level'),

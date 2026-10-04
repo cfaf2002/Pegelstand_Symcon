@@ -300,6 +300,11 @@
                 },
                 {
                     "type": "CheckBox",
+                    "name": "TileShowFish",
+                    "caption": "Fish school in the water"
+                },
+                {
+                    "type": "CheckBox",
                     "name": "TileShowInsights",
                     "caption": "Assessment in words and forecast in the tile"
                 },

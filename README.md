@@ -149,8 +149,9 @@ Ausgelöst wird, wenn PEGELONLINE „über HSW“ meldet oder der Pegel die eige
 | Verlaufslinie anzeigen | an | Messverlauf als Linie im Hintergrund |
 | Zeitraum der Verlaufslinie | 24 Stunden | max. 720 Stunden (30 Tage, Grenze der API) |
 | Pegellatte | an | Messlatte mit cm-Skala am linken Rand, gelbe Markierung am aktuellen Pegel |
-| Sonne, Mond und Wolken | an | Sonne nach echtem Sonnenstand, nachts der Mond in der aktuellen Phase, dazu ziehende Wolken |
-| Schiff | an | Schaukelt auf den Wellen. Liegt der Pegel über HSW, ist die Schifffahrt eingestellt: Das Schiff liegt vor Anker und ein Hinweis erscheint |
+| Sonne, Mond und Wolken | an | Sonne mit Korona und Strahlen nach echtem Sonnenstand, nachts der Mond in der aktuellen Phase, dazu weiche Haufenwolken in zwei Ebenen |
+| Schiff | an | Modernes Containerschiff mit Bugwelle und Kielwasser, das langsam flussabwärts fährt; nachts mit beleuchtetem Steuerhaus und Positionslichtern. Liegt der Pegel über HSW, ist die Schifffahrt eingestellt: Das Schiff liegt vor Anker und ein Hinweis erscheint |
+| Fischschwarm | an | Ein Schwarm zieht in ruhigen Bahnen durchs Wasser; hält an, wenn die Kachel nicht zu sehen ist |
 | Einordnung und Prognose | an | Zeigt die Einordnung in Worten und die Prognose in der Kachel |
 | Strömung und Regen | an | Steigt der Pegel, zieht das Wasser schneller und mit Strömungsstreifen; fällt er, beruhigt es sich. Bei Hochwasser regnet es |
 | Animationen reduzieren | aus | Schaltet Sterne, Wolken, Strömung, Regen und Schaukeln ab und verlangsamt die Wellen – für ältere Wandtablets |
