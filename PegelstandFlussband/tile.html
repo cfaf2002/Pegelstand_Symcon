@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <!--
     Kachel für das Modul "Pegelstand Flussband" (IP-Symcon HTML-SDK)
     Copyright (c) 2026 Armin Frohwerk · MIT-Lizenz (siehe LICENSE)
@@ -291,6 +292,54 @@
         white-space: nowrap;
     }
 
+    /* Legende */
+    .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        margin-left: 30px;
+        font-size: clamp(8px, 3.2cqmin, 11px);
+        color: var(--muted);
+    }
+
+    .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+
+    .legend b {
+        font-weight: 400;
+    }
+
+    .legend i {
+        display: inline-block;
+        flex: none;
+    }
+
+    .legend .lg-hsw {
+        width: 14px;
+        height: 0;
+        border-top: 2px solid #ff6b6b;
+    }
+
+    .legend .lg-col {
+        width: 9px;
+        height: 9px;
+        border-radius: 2px;
+        background: linear-gradient(180deg, var(--c1), var(--c2));
+    }
+
+    .legend .lg-col.high { --c1: #f5ad3c; --c2: #b0561a; }
+    .legend .lg-col.warn { --c1: #ef5a5f; --c2: #8c1c22; }
+    .legend .lg-col.approx {
+        --c1: var(--w1);
+        --c2: var(--w2);
+        opacity: .8;
+        background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .35) 0 2px, transparent 2px 4px), linear-gradient(180deg, var(--c1), var(--c2));
+    }
+
     .foot {
         display: flex;
         justify-content: space-between;
@@ -309,6 +358,14 @@
 
     @container (max-height: 160px) {
         .info, .foot { display: none; }
+    }
+
+    @container (max-height: 200px) {
+        .legend { display: none; }
+    }
+
+    @container (max-width: 360px) {
+        .legend .lg-opt { display: none; }
     }
 
     #fb.paused *, #fb.paused *::before, #fb.paused *::after {
@@ -333,6 +390,13 @@
     <div class="names" id="names"></div>
     <!-- Infozeile unten: oben fängt die Symcon-Kopfzeile Klicks ab -->
     <div class="info" id="info" data-t="Tap a column for details">Tap a column for details</div>
+    <div class="legend">
+        <span><i class="lg-hsw"></i><b data-t="HSW – navigation suspended above">HSW – navigation suspended above</b></span>
+        <span class="lg-opt"><i class="lg-col high"></i><b data-t="above MHW">above MHW</b></span>
+        <span><i class="lg-col warn"></i><b data-t="above HSW">above HSW</b></span>
+        <span class="lg-opt"><i class="lg-col approx"></i><b data-t="position estimated">position estimated</b></span>
+        <span class="lg-opt">↗ ↘ <b data-t="rising / falling">rising / falling</b></span>
+    </div>
     <div class="foot"><span id="dir"><span data-t="Flow direction">Flow direction</span> →</span><span id="upd"></span></div>
 </div>
 

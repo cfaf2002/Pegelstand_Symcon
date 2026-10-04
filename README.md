@@ -151,13 +151,15 @@ Ausgelöst wird, wenn PEGELONLINE „über HSW“ meldet oder der Pegel die eige
 | Zeitraum der Verlaufslinie | 24 Stunden | max. 720 Stunden (30 Tage, Grenze der API) |
 | Pegellatte | an | Messlatte mit cm-Skala am linken Rand, gelbe Markierung am aktuellen Pegel |
 | Sonne, Mond und Wolken | an | Sonne mit Korona und Strahlen nach echtem Sonnenstand, nachts der Mond in der aktuellen Phase, dazu weiche Haufenwolken in zwei Ebenen |
-| Schiff | an | Modernes Containerschiff mit Bugwelle und Kielwasser, das langsam flussabwärts fährt; nachts mit beleuchtetem Steuerhaus und Positionslichtern. Liegt der Pegel über HSW, ist die Schifffahrt eingestellt: Das Schiff liegt vor Anker und ein Hinweis erscheint |
+| Schiff | an | Modernes Binnen-Containerschiff (flacher Rumpf, Container mit Wellblech-Struktur, hochgesetztes Steuerhaus mit Panoramaverglasung, Radar, LED-Lichter, Schatten auf dem Wasser) mit Bugwelle und Kielwasser, das langsam flussabwärts fährt; nachts mit beleuchtetem Steuerhaus und Positionslichtern. Liegt der Pegel über HSW, ist die Schifffahrt eingestellt: Das Schiff liegt vor Anker und ein Hinweis erscheint |
 | Fischschwarm | an | Ein Schwarm zieht in ruhigen Bahnen durchs Wasser; hält an, wenn die Kachel nicht zu sehen ist |
 | Einordnung und Prognose | an | Zeigt die Einordnung in Worten und die Prognose in der Kachel |
 | Strömung und Regen | an | Steigt der Pegel, zieht das Wasser schneller und mit Strömungsstreifen; fällt er, beruhigt es sich. Bei Hochwasser regnet es |
 | Animationen reduzieren | aus | Schaltet Sterne, Wolken, Strömung, Regen und Schaukeln ab und verlangsamt die Wellen – für ältere Wandtablets |
 
 Die Wasserfarbe zeigt den Zustand: hellblau = niedrig (unter MNW), blau = normal, orange = hoch (über MHW), rot = Hochwasserwarnung, grau = keine oder veraltete Daten (älter als 3 Stunden). Die Skala passt sich automatisch an Pegel, Kennwerte und Verlauf an.
+
+**Wasser:** Die Wasserfläche wird live gezeichnet: überlagerte Wellenzüge (stärker bei steigendem Pegel), ein heller Lichtsaum unter der Oberfläche, schräg einfallende Lichtstrahlen, Schwebeteilchen, Glitzern unter der Sonne und ein silberner Schimmer unter dem Mond. Oben spiegelt sich der Himmel, nach unten wird das Wasser tief.
 
 **Sparsam auf Wandtablets:** Ist die Kachel nicht zu sehen (anderer Raum in der Visualisierung, Bildschirm aus, App im Hintergrund), hält sie alle Animationen an.
 
@@ -207,7 +209,8 @@ Zeigt mehrere Stationen eines Gewässers als Wassersäulen nebeneinander, geordn
 In der Kachel:
 - **Farbe** wie beim Pegelstand: blau normal, hellblau niedrig, orange hoch, rot über HSW.
 - **Schraffierte Säulen** haben nicht alle Kennwerte; ihre Lage ist über MW bzw. HSW geschätzt.
-- **Rote Striche** markieren den HSW jeder Station.
+- **Rote Striche** markieren den HSW (höchster Schifffahrtswasserstand) jeder Station. Erreicht die Säule den Strich, ist die Schifffahrt dort eingestellt und die Säule wird rot.
+- **Legende** unten in der Kachel erklärt Striche, Farben und Schraffur; auf schmalen Kacheln nur das Wichtigste, auf sehr niedrigen ausgeblendet.
 - **Pfeile** an den Werten zeigen, ob die Station in den letzten Stunden um mindestens 2 cm gestiegen oder gefallen ist. Neue Stationen laden ihre letzten 3 Stunden einmalig nach, die Pfeile stimmen also sofort.
 - **Antippen** einer Säule zeigt Station, Fluss-km, Pegel, Abstand zum Mittelwasser und Änderung. Ist für die Station schon eine Pegelstand-Instanz angelegt, öffnet „Öffnen“ sie direkt.
 

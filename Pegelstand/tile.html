@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <!--
     Kachel für das Modul "Pegelstand" (IP-Symcon HTML-SDK)
     Copyright (c) 2026 Armin Frohwerk · MIT-Lizenz (siehe LICENSE)
@@ -83,6 +84,9 @@
     /* ---------- Wasser ---------- */
     .water {
         position: absolute;
+        /* eigene Ebene: Wasser, Schiff und Fische bleiben unter Texten und Linien */
+        z-index: 0;
+        isolation: isolate;
         left: 0;
         right: 0;
         bottom: 0;
@@ -751,14 +755,27 @@
         position: absolute;
         bottom: calc(100% - clamp(5px, 2cqmin, 9px));
         left: 70%;
-        width: clamp(64px, 30cqmin, 150px);
+        width: clamp(78px, 34cqmin, 175px);
         display: none;
+        z-index: 3;
         pointer-events: none;
         animation: sail 140s linear infinite;
         animation-delay: -60s;
     }
 
     #tile.show-boat .boat { display: block; }
+
+    /* weicher Schatten und Spiegelung auf dem Wasser */
+    .boat .shade {
+        position: absolute;
+        left: 4%;
+        right: 2%;
+        bottom: -7px;
+        height: 9px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at 50% 30%, rgba(5, 15, 30, .45), rgba(5, 15, 30, 0) 70%);
+        filter: blur(1px);
+    }
 
     .boat .hull {
         animation: bob calc(var(--wspeed) / 1.6) ease-in-out infinite;
@@ -834,9 +851,24 @@
     #tile.sky-night .boat .lit, #tile.theme-dark .boat .lit, #tile.night .boat .lit { opacity: 1; }
     #tile.sky-night .boat .win, #tile.theme-dark .boat .win, #tile.night .boat .win { fill: #ffd27a; }
 
+    /* ---------- Realistisches Wasser (Canvas) ---------- */
+    .sea {
+        position: absolute;
+        z-index: 1;
+        left: 0;
+        right: 0;
+        top: -28px;
+        width: 100%;
+        height: calc(100% + 28px);
+        pointer-events: none;
+    }
+
+    #tile.has-sea .wave, #tile.has-sea .water .body { display: none; }
+
     /* ---------- Fischschwarm ---------- */
     .fish {
         position: absolute;
+        z-index: 2;
         inset: 0;
         width: 100%;
         height: 100%;
@@ -1118,68 +1150,83 @@
         <div class="boat" id="boat">
             <div class="wake"></div>
             <div class="bow"></div>
+            <div class="shade"></div>
             <div class="hull">
-                <svg viewBox="0 0 120 40">
+                <svg viewBox="0 0 160 44">
                     <defs>
                         <linearGradient id="hullG" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0" stop-color="#3b4756"></stop>
-                            <stop offset="1" stop-color="#1c242e"></stop>
+                            <stop offset="0" stop-color="#34404d"></stop>
+                            <stop offset=".55" stop-color="#1c2530"></stop>
+                            <stop offset="1" stop-color="#121920"></stop>
                         </linearGradient>
-                        <linearGradient id="houseG" x1="0" y1="0" x2="1" y2="0">
+                        <linearGradient id="houseG" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0" stop-color="#ffffff"></stop>
-                            <stop offset="1" stop-color="#d9e0e8"></stop>
+                            <stop offset="1" stop-color="#d8dfe6"></stop>
                         </linearGradient>
+                        <linearGradient id="glassG" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#5d8db5"></stop>
+                            <stop offset=".45" stop-color="#20384f"></stop>
+                            <stop offset="1" stop-color="#132536"></stop>
+                        </linearGradient>
+                        <pattern id="corr" width="1.15" height="6" patternUnits="userSpaceOnUse">
+                            <rect width=".45" height="6" fill="rgba(0,0,0,.16)"></rect>
+                        </pattern>
                     </defs>
-                    <!-- Mast mit Radar und Licht -->
-                    <path d="M103 4 v9" stroke="#4a5563" stroke-width="1"></path>
-                    <rect x="99.5" y="5.5" width="7" height="1.4" rx=".7" fill="#4a5563"></rect>
-                    <circle class="lit" cx="103" cy="3.6" r="1.4" fill="#fff6c2"></circle>
-                    <!-- Steuerhaus -->
-                    <path d="M95 13 h17 l1.5 3 v10 h-20 z" fill="url(#houseG)"></path>
-                    <rect class="win" x="96.5" y="15.2" width="15.5" height="3.2" rx=".8" fill="#24384d"></rect>
-                    <path d="M97 15.6 h3 l-1.6 2.6 h-2.2 z" fill="rgba(255,255,255,.35)"></path>
-                    <rect x="92" y="20" width="23" height="6" fill="#e9eef3"></rect>
-                    <rect class="win" x="94" y="21.5" width="2.4" height="2" rx=".4" fill="#24384d"></rect>
-                    <rect class="win" x="98" y="21.5" width="2.4" height="2" rx=".4" fill="#24384d"></rect>
-                    <rect class="win" x="102" y="21.5" width="2.4" height="2" rx=".4" fill="#24384d"></rect>
-                    <!-- Container in zwei Lagen -->
-                    <g stroke="rgba(0,0,0,.25)" stroke-width=".4">
-                        <rect x="16" y="20" width="12" height="6" fill="#c4553d"></rect>
-                        <rect x="28.4" y="20" width="12" height="6" fill="#2f6690"></rect>
-                        <rect x="40.8" y="20" width="12" height="6" fill="#d9a441"></rect>
-                        <rect x="53.2" y="20" width="12" height="6" fill="#3a7d5c"></rect>
-                        <rect x="65.6" y="20" width="12" height="6" fill="#8b95a5"></rect>
-                        <rect x="78" y="20" width="12" height="6" fill="#c4553d"></rect>
-                        <rect x="22" y="14" width="12" height="6" fill="#3a7d5c"></rect>
-                        <rect x="34.4" y="14" width="12" height="6" fill="#8b95a5"></rect>
-                        <rect x="46.8" y="14" width="12" height="6" fill="#2f6690"></rect>
-                        <rect x="59.2" y="14" width="12" height="6" fill="#d9a441"></rect>
-                        <rect x="71.6" y="14" width="12" height="6" fill="#c4553d"></rect>
-                    </g>
-                    <g fill="rgba(0,0,0,.12)">
-                        <rect x="16" y="20" width="12" height="1.2"></rect><rect x="28.4" y="20" width="12" height="1.2"></rect>
-                        <rect x="40.8" y="20" width="12" height="1.2"></rect><rect x="53.2" y="20" width="12" height="1.2"></rect>
-                        <rect x="65.6" y="20" width="12" height="1.2"></rect><rect x="78" y="20" width="12" height="1.2"></rect>
-                        <rect x="22" y="14" width="12" height="1.2"></rect><rect x="34.4" y="14" width="12" height="1.2"></rect>
-                        <rect x="46.8" y="14" width="12" height="1.2"></rect><rect x="59.2" y="14" width="12" height="1.2"></rect>
-                        <rect x="71.6" y="14" width="12" height="1.2"></rect>
-                    </g>
-                    <!-- Rumpf mit hellem Schanzkleid und rotem Unterwasseranstrich -->
-                    <path d="M2 26 Q4 26 8 26 H116 Q118 26 118.5 27.5 L117 34 H10 Q4 33 2 26 Z" fill="url(#hullG)"></path>
-                    <path d="M3.2 27.4 H118 L117.8 28.3 H3.6 Z" fill="rgba(255,255,255,.55)"></path>
-                    <path d="M7.5 32 H117.3 L117 34 H10 Q8 33.6 7.5 32 Z" fill="#a8322f"></path>
-                    <!-- Positionslichter -->
-                    <circle class="lit" cx="6" cy="25" r="1" fill="#4dff88"></circle>
-                    <circle class="lit" cx="115" cy="12.5" r=".9" fill="#ff5a5a"></circle>
-                    <!-- Anker am Bug -->
+
+                    <!-- Bugmast mit Topplicht -->
+                    <path d="M14 29 V20" stroke="#5b6774" stroke-width=".8"></path>
+                    <circle class="lit" cx="14" cy="19.4" r="1.1" fill="#fff6c2"></circle>
+
+                    <!-- Container, zwei Lagen, Wellblech-Struktur -->
+                    <g><rect x="24.0" y="23.2" width="13.8" height="6.2" rx=".4" fill="#e9eef2"></rect><rect x="24.0" y="23.2" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="24.0" y="23.2" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="36.6" y="23.8" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="38.2" y="23.2" width="13.8" height="6.2" rx=".4" fill="#4f6d7a"></rect><rect x="38.2" y="23.2" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="38.2" y="23.2" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="50.8" y="23.8" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="52.4" y="23.2" width="13.8" height="6.2" rx=".4" fill="#c8714d"></rect><rect x="52.4" y="23.2" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="52.4" y="23.2" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="65.0" y="23.8" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="66.6" y="23.2" width="13.8" height="6.2" rx=".4" fill="#2f5d62"></rect><rect x="66.6" y="23.2" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="66.6" y="23.2" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="79.2" y="23.8" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="80.8" y="23.2" width="13.8" height="6.2" rx=".4" fill="#d6b46f"></rect><rect x="80.8" y="23.2" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="80.8" y="23.2" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="93.4" y="23.8" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="95.0" y="23.2" width="13.8" height="6.2" rx=".4" fill="#8b95a3"></rect><rect x="95.0" y="23.2" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="95.0" y="23.2" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="107.6" y="23.8" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="109.2" y="23.2" width="13.8" height="6.2" rx=".4" fill="#e9eef2"></rect><rect x="109.2" y="23.2" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="109.2" y="23.2" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="121.8" y="23.8" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="31.0" y="16.8" width="13.8" height="6.2" rx=".4" fill="#2f5d62"></rect><rect x="31.0" y="16.8" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="31.0" y="16.8" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="43.6" y="17.4" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="45.2" y="16.8" width="13.8" height="6.2" rx=".4" fill="#e9eef2"></rect><rect x="45.2" y="16.8" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="45.2" y="16.8" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="57.8" y="17.4" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="59.4" y="16.8" width="13.8" height="6.2" rx=".4" fill="#8b95a3"></rect><rect x="59.4" y="16.8" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="59.4" y="16.8" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="72.0" y="17.4" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="73.6" y="16.8" width="13.8" height="6.2" rx=".4" fill="#c8714d"></rect><rect x="73.6" y="16.8" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="73.6" y="16.8" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="86.2" y="17.4" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="87.8" y="16.8" width="13.8" height="6.2" rx=".4" fill="#d6b46f"></rect><rect x="87.8" y="16.8" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="87.8" y="16.8" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="100.4" y="17.4" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+                    <g><rect x="102.0" y="16.8" width="13.8" height="6.2" rx=".4" fill="#4f6d7a"></rect><rect x="102.0" y="16.8" width="13.8" height="6.2" rx=".4" fill="url(#corr)"></rect><rect x="102.0" y="16.8" width="13.8" height=".9" fill="rgba(255,255,255,.28)"></rect><rect x="114.6" y="17.4" width=".7" height="5.2" fill="rgba(0,0,0,.18)"></rect></g>
+
+                    <!-- Wohnaufbau achtern mit Fensterband -->
+                    <path d="M124 29 V20.5 Q124 19.5 125 19.5 H151 Q152.5 19.5 152.5 21 V29 Z" fill="url(#houseG)"></path>
+                    <rect class="win" x="126" y="22.4" width="24.5" height="2.2" rx="1.1" fill="#24384d"></rect>
+
+                    <!-- hochgesetztes Steuerhaus mit Panoramaverglasung -->
+                    <rect x="134.4" y="13" width="2.2" height="6.6" fill="#9aa6b2"></rect>
+                    <path d="M127.5 6.8 H151.5 L153.5 9.2 V13.6 H125.8 V9.6 Z" fill="url(#houseG)"></path>
+                    <path class="win" d="M126.8 9.4 H152.6 V12 H126.8 Z" fill="url(#glassG)"></path>
+                    <path d="M129 9.4 h5 l-2.4 2.6 h-4.2 z" fill="rgba(255,255,255,.28)"></path>
+                    <path d="M126.6 6.2 H152.4 L154.4 7.2 H126.6 Z" fill="#2a333d"></path>
+
+                    <!-- Mast mit Radar und LED-Lichtern -->
+                    <path d="M144 6.2 V0.8" stroke="#5b6774" stroke-width=".8"></path>
+                    <rect x="140.2" y="2.2" width="7.6" height="1.2" rx=".6" fill="#3b4652"></rect>
+                    <circle class="lit" cx="144" cy="0.6" r="1" fill="#fff6c2"></circle>
+                    <circle class="lit" cx="153.6" cy="8.8" r=".8" fill="#ff5a5a"></circle>
+
+                    <!-- Rumpf: flach, anthrazit, Akzentlinie, roter Unterwasseranstrich -->
+                    <path d="M3 29 H153.5 Q157 29 157.5 30.5 L155.8 37.6 H11 Q5 37 3 29 Z" fill="url(#hullG)"></path>
+                    <path d="M4.2 30.4 H156.6 L156.4 31.1 H4.5 Z" fill="#4fb3d9" opacity=".85"></path>
+                    <path d="M5 29.2 H157 L156.9 29.7 H5 Z" fill="rgba(255,255,255,.35)"></path>
+                    <path d="M8.5 35.6 H156.2 L155.8 37.6 H11 Q9.2 37.2 8.5 35.6 Z" fill="#9d2f2c"></path>
+                    <circle class="lit" cx="6.5" cy="28.4" r=".9" fill="#4dff88"></circle>
+
+                    <!-- Anker am Bug (nur vor Anker sichtbar) -->
                     <g class="anchor">
-                        <path d="M6 31 C 4.5 36 5 42 6.5 47" stroke="#c9d3dc" stroke-width=".9" fill="none" stroke-dasharray="1.4 1.1"></path>
-                        <path d="M6.5 47 v5 M4 49.5 h5 M3.6 51.2 q2.9 3.2 5.8 0" stroke="#c9d3dc" stroke-width="1.1" fill="none" stroke-linecap="round"></path>
+                        <path d="M7 33 C 5.5 38 6 44 7.5 49" stroke="#c9d3dc" stroke-width=".9" fill="none" stroke-dasharray="1.4 1.1"></path>
+                        <path d="M7.5 49 v5 M5 51.5 h5 M4.6 53.2 q2.9 3.2 5.8 0" stroke="#c9d3dc" stroke-width="1.1" fill="none" stroke-linecap="round"></path>
                     </g>
                 </svg>
             </div>
         </div>
         <div class="body"></div>
+        <canvas class="sea" id="sea"></canvas>
+        <i id="seaProbe" style="display:none"></i>
         <div class="caustics"></div>
         <canvas class="fish" id="fish"></canvas>
         <div class="current" id="current"></div>
@@ -1515,6 +1562,193 @@
             if (!m || m.length < 3) return false;
             var lum = (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255;
             return lum < 0.5;
+        }
+
+        // ---------- Wasser (Canvas): Wellen, Lichtsaum, Lichtstrahlen, Glitzern, Schwebeteilchen ----------
+        var sea = { on: false, raf: 0, last: 0, t: 0, amp: 1, c1: '#5aa9e6', c2: '#0d3d6b', light: null, parts: [], glints: [] };
+
+        function seaInit() {
+            sea.parts = [];
+            for (var i = 0; i < 34; i++) {
+                sea.parts.push({ x: Math.random(), y: Math.random(), v: 0.004 + Math.random() * 0.01, r: 0.5 + Math.random() * 1.1, a: 0.12 + Math.random() * 0.2 });
+            }
+            sea.glints = [];
+            for (var k = 0; k < 80; k++) {
+                // Normalverteilt um die Lichtquelle
+                var g = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+                sea.glints.push({ dx: g, dy: Math.pow(Math.random(), 1.6), ph: Math.random() * 6.28, sp: 1.2 + Math.random() * 2.2, len: 3 + Math.random() * 6 });
+            }
+        }
+
+        function seaColors() {
+            var probe = $('seaProbe');
+            probe.style.color = 'var(--w1)';
+            sea.c1 = getComputedStyle(probe).color || sea.c1;
+            probe.style.color = 'var(--w2)';
+            sea.c2 = getComputedStyle(probe).color || sea.c2;
+        }
+
+        function surfaceY(x, top, a, t) {
+            return top + a * (0.55 * Math.sin(x * 0.017 + t * 1.05) + 0.3 * Math.sin(x * 0.043 - t * 1.65) + 0.15 * Math.sin(x * 0.097 + t * 2.7));
+        }
+
+        function drawSea(ts) {
+            var c = $('sea');
+            if (!c) return;
+            if (sea.on) {
+                sea.raf = requestAnimationFrame(drawSea);
+                if (sea.last && ts - sea.last < 32) return;    // höchstens ~30 Bilder pro Sekunde
+                var dt = sea.last ? Math.min(0.08, (ts - sea.last) / 1000) : 0.033;
+                sea.last = ts;
+                sea.t += dt;
+            }
+            var dpr = window.devicePixelRatio || 1;
+            var w = c.clientWidth, h = c.clientHeight;
+            if (w < 20 || h < 30) return;
+            if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
+                c.width = Math.round(w * dpr);
+                c.height = Math.round(h * dpr);
+            }
+            var ctx = c.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+
+            var t = sea.t, top = 28;
+            var a = Math.max(2.5, Math.min(8, h * 0.016)) * sea.amp;
+            var step = Math.max(3, w / 160);
+
+            function surfacePath(off, amp, phase) {
+                ctx.beginPath();
+                ctx.moveTo(0, h);
+                for (var x = 0; x <= w + step; x += step) {
+                    ctx.lineTo(x, surfaceY(x + phase, top + off, amp, t + phase * 0.01));
+                }
+                ctx.lineTo(w, h);
+                ctx.closePath();
+            }
+
+            // hintere, hellere Wellenschicht
+            surfacePath(-3, a * 0.8, 140);
+            ctx.globalAlpha = 0.45;
+            ctx.fillStyle = sea.c1;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            // Wasserkörper: oben Himmelsspiegelung, nach unten tief
+            surfacePath(0, a, 0);
+            var body = ctx.createLinearGradient(0, top - a, 0, h);
+            body.addColorStop(0, sea.c1);
+            body.addColorStop(0.1, sea.c1);
+            body.addColorStop(1, sea.c2);
+            ctx.fillStyle = body;
+            ctx.fill();
+
+            ctx.save();
+            ctx.clip();
+
+            // Lichtsaum unter der Oberfläche
+            var band = ctx.createLinearGradient(0, top - a, 0, top + h * 0.28);
+            band.addColorStop(0, 'rgba(255,255,255,0.28)');
+            band.addColorStop(0.35, 'rgba(255,255,255,0.08)');
+            band.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = band;
+            ctx.fillRect(0, 0, w, h);
+
+            // schräge Lichtstrahlen
+            ctx.globalCompositeOperation = 'lighter';
+            for (var r = 0; r < 6; r++) {
+                var x0 = w * (0.06 + r * 0.17) + Math.sin(t * 0.25 + r * 1.7) * w * 0.03;
+                var spread = w * (0.05 + 0.02 * Math.sin(t * 0.4 + r));
+                var shaft = ctx.createLinearGradient(0, top, 0, h * 0.95);
+                shaft.addColorStop(0, 'rgba(255,255,255,' + (0.07 + 0.03 * Math.sin(t * 0.6 + r * 2)).toFixed(3) + ')');
+                shaft.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = shaft;
+                ctx.beginPath();
+                ctx.moveTo(x0 - spread * 0.25, top);
+                ctx.lineTo(x0 + spread * 0.25, top);
+                ctx.lineTo(x0 + spread * 1.6 + w * 0.08, h);
+                ctx.lineTo(x0 + spread * 0.4 + w * 0.08, h);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+
+            // Schwebeteilchen
+            sea.parts.forEach(function (p) {
+                if (sea.on) {
+                    p.y -= p.v * 0.033 * 2;
+                    p.x += Math.sin(t * 0.5 + p.v * 300) * 0.0004;
+                    if (p.y < 0) { p.y = 1; p.x = Math.random(); }
+                }
+                ctx.fillStyle = 'rgba(255,255,255,' + p.a.toFixed(2) + ')';
+                ctx.beginPath();
+                ctx.arc(p.x * w, top + 6 + p.y * (h - top - 6), p.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Abdunklung zum Grund
+            var deep = ctx.createLinearGradient(0, h * 0.55, 0, h);
+            deep.addColorStop(0, 'rgba(0,10,25,0)');
+            deep.addColorStop(1, 'rgba(0,10,25,0.28)');
+            ctx.fillStyle = deep;
+            ctx.fillRect(0, 0, w, h);
+            ctx.restore();
+
+            // Oberflächenkante: feine helle Linie mit weichem Schein
+            ctx.beginPath();
+            for (var x2 = 0; x2 <= w + step; x2 += step) {
+                var yy = surfaceY(x2, top, a, t);
+                if (x2 === 0) ctx.moveTo(x2, yy); else ctx.lineTo(x2, yy);
+            }
+            ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Glitzern unter Sonne oder Mond
+            if (sea.light) {
+                var lx = sea.light.x * w;
+                var path = ctx.createRadialGradient(lx, top + 6, 0, lx, top + 6, w * 0.2);
+                path.addColorStop(0, sea.light.night ? 'rgba(220,230,255,' + (0.22 * sea.light.a).toFixed(2) + ')' : 'rgba(255,245,210,' + (0.3 * sea.light.a).toFixed(2) + ')');
+                path.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.save();
+                ctx.translate(lx, top + 6);
+                ctx.scale(1, 0.18);
+                ctx.translate(-lx, -(top + 6));
+                ctx.fillStyle = path;
+                ctx.fillRect(lx - w * 0.2, top + 6 - w * 0.2, w * 0.4, w * 0.4);
+                ctx.restore();
+                sea.glints.forEach(function (g) {
+                    var gx = lx + g.dx * w * 0.16;
+                    if (gx < 0 || gx > w) return;
+                    var depth = g.dy * Math.min(26, (h - top) * 0.35);
+                    var gy = surfaceY(gx, top, a, t) + 2 + depth;
+                    var al = Math.pow(Math.max(0, Math.sin(t * g.sp + g.ph)), 3) * (1 - g.dy * 0.55) * sea.light.a;
+                    if (al < 0.02) return;
+                    ctx.fillStyle = sea.light.night ? 'rgba(225,232,255,' + al.toFixed(2) + ')' : 'rgba(255,250,225,' + al.toFixed(2) + ')';
+                    ctx.beginPath();
+                    ctx.ellipse(gx, gy, g.len * (1 - g.dy * 0.5), 1.1, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+        }
+
+        function setSea(on) {
+            if (on === sea.on) {
+                if (!on) drawSea(0);     // Standbild aktualisieren
+                return;
+            }
+            sea.on = on;
+            if (on) {
+                sea.last = 0;
+                sea.raf = requestAnimationFrame(drawSea);
+            } else {
+                if (sea.raf) cancelAnimationFrame(sea.raf);
+                sea.raf = 0;
+                drawSea(0);
+            }
         }
 
         // ---------- Fischschwarm (Canvas) ----------
@@ -1927,6 +2161,19 @@
             }
             $('bgdim').style.opacity = ((d.bgDim || 0) / 100).toFixed(2);
             fish.color = getComputedStyle(tile).getPropertyValue('--fish').trim() || fish.color;
+
+            // Wasser: Farben aus dem Design, Wellenhöhe nach Tendenz, Glitzern unter Sonne/Mond
+            tile.classList.add('has-sea');
+            seaColors();
+            sea.amp = effects && d.trend > 0 ? 1.6 : (effects && d.trend < 0 ? 0.8 : 1);
+            sea.light = null;
+            if (classes.indexOf('show-sun') >= 0) {
+                sea.light = { x: (parseFloat($('sun').style.left) || 60) / 100, a: classes.indexOf('sky-dusk') >= 0 ? 0.75 : 0.95, night: false };
+            } else if (classes.indexOf('show-moon') >= 0) {
+                sea.light = { x: (parseFloat($('moon').style.left) || 74) / 100, a: 0.55, night: true };
+            }
+            if (!sea.parts.length) seaInit();
+            setSea(hasLevel && !paused && !d.calm && classes.indexOf('layout-ring') < 0);
             setFish(fishOn && !paused && classes.indexOf('layout-ring') < 0);
 
             if ($('detail').classList.contains('open')) {
@@ -1961,6 +2208,7 @@
                 paused = p;
                 $('tile').classList.toggle('paused', p);
                 setFish(!p && $('tile').classList.contains('show-fish') && !$('tile').classList.contains('layout-ring'));
+                setSea(!p && !(last && last.calm) && !$('tile').classList.contains('layout-ring'));
             }
         }
         document.addEventListener('visibilitychange', updatePause);
