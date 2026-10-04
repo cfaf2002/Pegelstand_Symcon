@@ -437,7 +437,7 @@
         z-index: 10;
         box-sizing: border-box;
         padding: clamp(8px, 5cqmin, 18px);
-        padding-top: var(--hdr);
+        padding-top: calc(var(--hdr) + 6px);
         display: flex;
         flex-direction: column;
         gap: clamp(4px, 2.5cqmin, 10px);
@@ -885,19 +885,34 @@
     /* Detailansicht: Objekt in der Visualisierung öffnen (Symcon 8.2+) */
     .d-actions {
         display: flex;
-        gap: 6px;
+        justify-content: flex-end;
+        gap: 8px;
         align-items: center;
         flex: none;
     }
 
+    .d-back {
+        border: none;
+        border-radius: 999px;
+        padding: .45em 1em;
+        background: rgba(255, 255, 255, .16);
+        color: inherit;
+        font: inherit;
+        font-size: clamp(11px, 4.4cqmin, 14px);
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    #tile.sym-light .d-back { background: rgba(0, 0, 0, .08); }
+
     .d-open {
         border: none;
         border-radius: 999px;
-        padding: .3em .8em;
+        padding: .45em 1em;
         background: rgba(255, 255, 255, .12);
         color: #fff;
         font: inherit;
-        font-size: .75em;
+        font-size: clamp(11px, 4.4cqmin, 14px);
         font-weight: 600;
         cursor: pointer;
         white-space: nowrap;
@@ -1035,10 +1050,6 @@
     <div class="detail" id="detail">
         <div class="d-head">
             <div><span id="dTitle">Pegelstand</span> <small id="dRange"></small></div>
-            <div class="d-actions">
-                <button class="d-open" id="dOpen" style="display:none"><span data-t="Open history">Open history</span> ↗</button>
-                <button class="d-close" id="dClose" aria-label="Schließen">✕</button>
-            </div>
         </div>
         <div class="d-stats">
             <div><span data-t="Now">Now</span><b id="dNow">–</b></div>
@@ -1047,6 +1058,11 @@
             <div><span data-t="Diff">Diff</span><b id="dDelta">–</b></div>
         </div>
         <div class="d-chart" id="dChart"></div>
+        <!-- Knöpfe unten: oben liegt die Kopfzeile der Symcon-Kachel und fängt Klicks ab -->
+        <div class="d-actions">
+            <button class="d-open" id="dOpen" style="display:none"><span data-t="Open history">Open history</span> ↗</button>
+            <button class="d-back" id="dClose"><span data-t="Close">Close</span> ✕</button>
+        </div>
     </div>
 </div>
 
@@ -1581,9 +1597,7 @@
                 }
                 return;
             }
-            if (detail.contains(ev.target) && ev.target !== $('dClose')) {
-                return;
-            }
+            // In der Detailansicht schließt jeder Klick außer „Verlauf öffnen“
             if (detail.classList.contains('open')) {
                 detail.classList.remove('open');
             } else if (last) {
