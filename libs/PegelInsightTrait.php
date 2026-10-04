@@ -27,20 +27,20 @@ trait PegelInsightTrait
             return number_format(abs($v), 0, ',', '.') . ' cm';
         };
         if (isset($cvs['HSW']) && $level >= $cvs['HSW']) {
-            return sprintf($this->Translate('%s über dem höchsten Schifffahrtswasserstand'), $fmt($level - $cvs['HSW']));
+            return sprintf($this->Translate('%s above the highest navigable water level'), $fmt($level - $cvs['HSW']));
         }
         if (isset($cvs['MHW']) && $level >= $cvs['MHW']) {
-            return sprintf($this->Translate('%s über mittlerem Hochwasser'), $fmt($level - $cvs['MHW']));
+            return sprintf($this->Translate('%s above mean high water'), $fmt($level - $cvs['MHW']));
         }
         if (isset($cvs['MNW']) && $level <= $cvs['MNW']) {
-            return sprintf($this->Translate('%s unter mittlerem Niedrigwasser'), $fmt($cvs['MNW'] - $level));
+            return sprintf($this->Translate('%s below mean low water'), $fmt($cvs['MNW'] - $level));
         }
         if (isset($cvs['MW'])) {
             $diff = $level - $cvs['MW'];
             if (abs($diff) < 3) {
-                return $this->Translate('etwa auf Mittelwasser');
+                return $this->Translate('about at mean water level');
             }
-            return sprintf($this->Translate($diff > 0 ? '%s über Mittelwasser' : '%s unter Mittelwasser'), $fmt($diff));
+            return sprintf($this->Translate($diff > 0 ? '%s above mean water level' : '%s below mean water level'), $fmt($diff));
         }
         return '';
     }
@@ -77,10 +77,10 @@ trait PegelInsightTrait
 
         $all = count($days) >= 28;
         if ($higher >= 3) {
-            return ($higher === count($days) && $all) ? $this->Translate('höchster Stand seit über 4 Wochen') : sprintf($this->Translate('höchster Stand seit %d Tagen'), $higher);
+            return ($higher === count($days) && $all) ? $this->Translate('highest level in over 4 weeks') : sprintf($this->Translate('highest level in %d days'), $higher);
         }
         if ($lower >= 3) {
-            return ($lower === count($days) && $all) ? $this->Translate('niedrigster Stand seit über 4 Wochen') : sprintf($this->Translate('niedrigster Stand seit %d Tagen'), $lower);
+            return ($lower === count($days) && $all) ? $this->Translate('lowest level in over 4 weeks') : sprintf($this->Translate('lowest level in %d days'), $lower);
         }
         return '';
     }
@@ -142,14 +142,14 @@ trait PegelInsightTrait
         $warnLevel = $this->ReadPropertyInteger('WarnLevel');
         if ($warnLevel > 0) {
             $target = (float) $warnLevel;
-            $label = $this->Translate('Warnschwelle');
+            $label = $this->Translate('warning threshold');
             $isWarnLevel = true;
         } elseif (isset($cvs['HSW'])) {
             $target = $cvs['HSW'];
             $label = 'HSW';
         } elseif (isset($cvs['MHW'])) {
             $target = $cvs['MHW'];
-            $label = $this->Translate('mittleres Hochwasser');
+            $label = $this->Translate('mean high water');
         } else {
             return '';
         }
@@ -162,7 +162,7 @@ trait PegelInsightTrait
             $clear = $target - (!empty($isWarnLevel) ? max(0.0, $this->ReadPropertyFloat('NotifyHysteresis')) : 0.0);
             if ($level > $clear) {
                 $hours = ($level - $clear) / -$slope;
-                return $hours <= 48 ? sprintf($this->Translate('unter %s %s'), $label, $this->FormatHours($hours)) : '';
+                return $hours <= 48 ? sprintf($this->Translate('below %s %s'), $label, $this->FormatHours($hours)) : '';
             }
         }
         return '';
@@ -171,8 +171,8 @@ trait PegelInsightTrait
     private function FormatHours(float $hours): string
     {
         if ($hours < 1) {
-            return $this->Translate('in unter 1 Std.');
+            return $this->Translate('in less than 1 h');
         }
-        return sprintf($this->Translate('in ca. %d Std.'), (int) round($hours));
+        return sprintf($this->Translate('in approx. %d h'), (int) round($hours));
     }
 }

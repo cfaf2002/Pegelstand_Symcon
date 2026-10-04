@@ -322,10 +322,10 @@
         <div class="title" id="title">Flussband</div>
         <div class="sub" id="sub"></div>
     </div>
-    <div class="info" id="info" data-t="Säule antippen für Details">Säule antippen für Details</div>
+    <div class="info" id="info" data-t="Tap a column for details">Tap a column for details</div>
     <div class="chart" id="chart"></div>
     <div class="names" id="names"></div>
-    <div class="foot"><span id="dir"><span data-t="Fließrichtung">Fließrichtung</span> →</span><span id="upd"></span></div>
+    <div class="foot"><span id="dir"><span data-t="Flow direction">Flow direction</span> →</span><span id="upd"></span></div>
 </div>
 
 <script>
@@ -358,6 +358,12 @@
             }
         }
 
+        // „Uhr“ hinter der Uhrzeit nur, wenn die Sprache es vorsieht (Deutsch); Englisch zeigt nur die Zeit
+        function clockSuffix() {
+            var u = T('o\'clock');
+            return u === 'o\'clock' ? '' : ' ' + u;
+        }
+
         function translateStatic(root) {
             Array.prototype.forEach.call(root.querySelectorAll('[data-t]'), function (el) {
                 el.textContent = T(el.getAttribute('data-t'));
@@ -375,15 +381,15 @@
             var c = s.cvs || {};
             if (typeof c.MW === 'number') {
                 var d = s.level - c.MW;
-                parts.push(Math.abs(d) < 3 ? T('etwa auf MW') : nf0.format(Math.abs(d)) + ' ' + T(d > 0 ? 'cm über MW' : 'cm unter MW'));
+                parts.push(Math.abs(d) < 3 ? T('about at MW') : nf0.format(Math.abs(d)) + ' ' + T(d > 0 ? 'cm above MW' : 'cm below MW'));
             }
-            if (typeof s.diff === 'number') parts.push((s.diff > 0 ? '+' : '') + nf1.format(s.diff) + ' ' + T('cm in den letzten Std.'));
-            if (s.warn) parts.push(T('Schifffahrt eingestellt'));
-            if (s.approx && s.rel !== null) parts.push(T('Lage geschätzt'));
+            if (typeof s.diff === 'number') parts.push((s.diff > 0 ? '+' : '') + nf1.format(s.diff) + ' ' + T('cm in recent hours'));
+            if (s.warn) parts.push(T('Navigation suspended'));
+            if (s.approx && s.rel !== null) parts.push(T('position estimated'));
             var html = '<span class="txt">' + parts.join(' · ') + '</span>';
             // Symcon 8.2+: angelegte Pegelstand-Instanz direkt öffnen
             if (s.open && typeof window.openObject === 'function') {
-                html += '<button class="open" data-open="' + s.open + '">' + T('Öffnen') + ' ↗</button>';
+                html += '<button class="open" data-open="' + s.open + '">' + T('Open') + ' ↗</button>';
             }
             return html;
         }
@@ -397,18 +403,18 @@
             }
             if (d.calm) fb.classList.add('calm');
             if (paused) fb.classList.add('paused');
-            $('title').textContent = nice(d.water) || T('Flussband');
+            $('title').textContent = nice(d.water) || T('River band');
 
             var st = Array.isArray(d.stations) ? d.stations : [];
             if (st.length === 0) {
                 $('sub').textContent = '';
-                $('chart').innerHTML = '<div class="empty">' + (d.error || T('Keine Daten')) + '</div>';
+                $('chart').innerHTML = '<div class="empty">' + (d.error || T('No data')) + '</div>';
                 $('names').innerHTML = '';
                 return;
             }
 
             var first = st[0], lastSt = st[st.length - 1];
-            $('sub').textContent = st.length + ' ' + T('Stationen') + (typeof first.km === 'number' && typeof lastSt.km === 'number'
+            $('sub').textContent = st.length + ' ' + T('stations') + (typeof first.km === 'number' && typeof lastSt.km === 'number'
                 ? ' · km ' + nf0.format(first.km) + '–' + nf0.format(lastSt.km) : '');
 
             var html = '';
@@ -453,8 +459,8 @@
             names.className = 'names' + ($('chart').clientWidth / st.length < 56 ? ' rot' : '');
             names.innerHTML = st.map(function (s) { return '<span>' + nice(s.name) + '</span>'; }).join('');
 
-            $('upd').textContent = d.updated ? new Date(d.updated * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' ' + T('Uhr') : '';
-            $('info').innerHTML = selected >= 0 && st[selected] ? describe(st[selected]) : T('Säule antippen für Details');
+            $('upd').textContent = d.updated ? new Date(d.updated * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + clockSuffix() : '';
+            $('info').innerHTML = selected >= 0 && st[selected] ? describe(st[selected]) : T('Tap a column for details');
         }
 
         $('fb').addEventListener('click', function (ev) {

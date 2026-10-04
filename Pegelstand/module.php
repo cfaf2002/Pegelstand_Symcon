@@ -118,29 +118,29 @@ class Pegelstand extends IPSModuleStrict
         $this->SetVisualizationType($this->ReadPropertyBoolean('UseTile') ? 1 : 0);
 
         // Grundvariablen
-        $this->Variable('Level', 'Pegelstand', VARIABLETYPE_FLOAT, 'level', 10, true);
-        $this->Variable('Trend', 'Tendenz', VARIABLETYPE_INTEGER, 'trend', 20, true);
-        $this->Variable('Change', 'Veränderung im Tendenz-Zeitraum', VARIABLETYPE_FLOAT, 'delta', 30, true);
+        $this->Variable('Level', 'Water level', VARIABLETYPE_FLOAT, 'level', 10, true);
+        $this->Variable('Trend', 'Trend', VARIABLETYPE_INTEGER, 'trend', 20, true);
+        $this->Variable('Change', 'Change in trend period', VARIABLETYPE_FLOAT, 'delta', 30, true);
 
         // Zuschaltbare Extras
-        $this->Variable('MeasuredAt', 'Messzeitpunkt', VARIABLETYPE_INTEGER, 'timestamp', 40, $this->ReadPropertyBoolean('ShowTimestamp'));
+        $this->Variable('MeasuredAt', 'Time of measurement', VARIABLETYPE_INTEGER, 'timestamp', 40, $this->ReadPropertyBoolean('ShowTimestamp'));
 
         $info = $this->ReadPropertyBoolean('ShowStationInfo');
-        $this->Variable('Water', 'Gewässer', VARIABLETYPE_STRING, 'text', 50, $info);
+        $this->Variable('Water', 'Waterway', VARIABLETYPE_STRING, 'text', 50, $info);
         $this->Variable('Station', 'Station', VARIABLETYPE_STRING, 'text', 51, $info);
-        $this->Variable('RiverKm', 'Fluss-km', VARIABLETYPE_FLOAT, 'km', 52, $info);
-        $this->Variable('GaugeZero', 'Pegelnullpunkt', VARIABLETYPE_FLOAT, 'nhn', 53, $info);
+        $this->Variable('RiverKm', 'River km', VARIABLETYPE_FLOAT, 'km', 52, $info);
+        $this->Variable('GaugeZero', 'Gauge zero', VARIABLETYPE_FLOAT, 'nhn', 53, $info);
 
         $flood = $this->ReadPropertyBoolean('ShowFloodWarning');
-        $this->Variable('StateMnwMhw', 'Zustand (MNW/MHW)', VARIABLETYPE_INTEGER, 'state', 60, $flood);
-        $this->Variable('StateNswHsw', 'Zustand (NSW/HSW)', VARIABLETYPE_INTEGER, 'state', 61, $flood);
-        $this->Variable('FloodWarning', 'Hochwasserwarnung', VARIABLETYPE_BOOLEAN, 'warning', 62, $flood);
+        $this->Variable('StateMnwMhw', 'State (MNW/MHW)', VARIABLETYPE_INTEGER, 'state', 60, $flood);
+        $this->Variable('StateNswHsw', 'State (NSW/HSW)', VARIABLETYPE_INTEGER, 'state', 61, $flood);
+        $this->Variable('FloodWarning', 'Flood warning', VARIABLETYPE_BOOLEAN, 'warning', 62, $flood);
 
-        $this->Variable('Discharge', 'Abfluss', VARIABLETYPE_FLOAT, 'discharge', 70, $this->ReadPropertyBoolean('ShowDischarge'));
+        $this->Variable('Discharge', 'Discharge', VARIABLETYPE_FLOAT, 'discharge', 70, $this->ReadPropertyBoolean('ShowDischarge'));
 
         $insights = $this->ReadPropertyBoolean('ShowInsights');
-        $this->Variable('Insight', 'Einordnung', VARIABLETYPE_STRING, 'insight', 80, $insights);
-        $this->Variable('Forecast', 'Prognose', VARIABLETYPE_STRING, 'forecast', 81, $insights);
+        $this->Variable('Insight', 'Assessment', VARIABLETYPE_STRING, 'insight', 80, $insights);
+        $this->Variable('Forecast', 'Forecast', VARIABLETYPE_STRING, 'forecast', 81, $insights);
 
         // Kennwerte entfernen, wenn abgeschaltet oder Station gewechselt
         $uuid = $this->StationID();
@@ -159,7 +159,7 @@ class Pegelstand extends IPSModuleStrict
         if ($uuid === '') {
             $this->SetTimerInterval('Update', 0);
             $this->SetStatus(104);
-            $this->PushTile(['error' => $this->Translate('Keine Messstation gewählt')]);
+            $this->PushTile(['error' => $this->Translate('No gauging station selected')]);
             return;
         }
 
@@ -168,7 +168,7 @@ class Pegelstand extends IPSModuleStrict
         // Station gewählt: „Bitte Station wählen“ sofort durch „lädt“ ersetzen
         $this->SetStatus(102);
         if ($this->ReadAttributeInteger('LastMeasurement') === 0) {
-            $this->PushTile(['error' => $this->Translate('Wird geladen …')]);
+            $this->PushTile(['error' => $this->Translate('Loading …')]);
         }
 
         if (IPS_GetKernelRunlevel() === KR_READY) {
@@ -191,8 +191,8 @@ class Pegelstand extends IPSModuleStrict
             case 'ReloadStations':
                 $stations = $this->FetchStations();
                 if ($stations === null || count($stations) === 0) {
-                    $this->WriteAttributeString('StationListError', $this->apiError !== '' ? $this->apiError : $this->Translate('leere Antwort'));
-                    echo $this->Translate('Stationsliste konnte nicht von PEGELONLINE geladen werden.') . ' (' . $this->ReadAttributeString('StationListError') . ')';
+                    $this->WriteAttributeString('StationListError', $this->apiError !== '' ? $this->apiError : $this->Translate('empty response'));
+                    echo $this->Translate('Station list could not be loaded from PEGELONLINE.') . ' (' . $this->ReadAttributeString('StationListError') . ')';
                     return;
                 }
                 $this->WriteAttributeString('StationCache', json_encode($stations));
@@ -220,12 +220,12 @@ class Pegelstand extends IPSModuleStrict
         $error = $this->ReadAttributeString('StationListError');
         $this->InjectProperty($form['elements'], 'StationListError', 'visible', $error !== '');
         $this->InjectProperty($form['elements'], 'StationListError', 'caption', sprintf(
-            $this->Translate('Stationsliste konnte nicht geladen werden (%s). Station unten direkt eintragen oder „Stationsliste neu laden“.'),
+            $this->Translate('Station list could not be loaded (%s). Enter the station directly below or use “Reload station list”.'),
             $error
         ));
 
         if ($this->GetSymconLocation() === null) {
-            $this->InjectCaption($form['elements'], 'SortByDistance', $this->Translate('Nach Entfernung sortieren (Standort in Symcon unter Kern Instanzen → Location nicht gesetzt)'));
+            $this->InjectCaption($form['elements'], 'SortByDistance', $this->Translate('Sort by distance (location not set in Symcon under Core Instances → Location)'));
         }
         return json_encode($form);
     }
@@ -260,13 +260,13 @@ class Pegelstand extends IPSModuleStrict
         $code = 0;
         $station = $this->ApiRequest('stations/' . rawurlencode($uuid) . '.json?includeTimeseries=true&includeCurrentMeasurement=true&includeCharacteristicValues=true', $code);
         if ($station === null) {
-            $this->HandleFailure($code === 404 ? 202 : 201, $code === 404 ? $this->Translate('Messstation nicht gefunden') : $this->Translate('PEGELONLINE nicht erreichbar'));
+            $this->HandleFailure($code === 404 ? 202 : 201, $code === 404 ? $this->Translate('Gauging station not found') : $this->Translate('PEGELONLINE not reachable'));
             return false;
         }
 
         $w = $this->FindSeries($station, 'W');
         if ($w === null || !isset($w['currentMeasurement']['value'])) {
-            $this->HandleFailure(203, $this->Translate('Kein aktueller Wasserstand'));
+            $this->HandleFailure(203, $this->Translate('No current water level'));
             return false;
         }
 
@@ -626,7 +626,7 @@ class Pegelstand extends IPSModuleStrict
                 $this->WriteAttributeString('StationCache', json_encode($stations));
                 $this->WriteAttributeString('StationListError', '');
             } else {
-                $this->WriteAttributeString('StationListError', $this->apiError !== '' ? $this->apiError : $this->Translate('leere Antwort'));
+                $this->WriteAttributeString('StationListError', $this->apiError !== '' ? $this->apiError : $this->Translate('empty response'));
             }
         }
         return $stations;
@@ -663,7 +663,7 @@ class Pegelstand extends IPSModuleStrict
         $filtered = $this->FilterStations($stations, $filter);
         $selected = $this->ReadPropertyString('StationUUID');
 
-        $options = [['caption' => $this->Translate('– bitte wählen –'), 'value' => '']];
+        $options = [['caption' => $this->Translate('– please select –'), 'value' => '']];
         $found = false;
         foreach ($filtered as $s) {
             $options[] = ['caption' => $this->StationLabel($s), 'value' => $s['uuid']];
@@ -674,7 +674,7 @@ class Pegelstand extends IPSModuleStrict
 
         // Aktuell gewählte Station immer anbieten, auch wenn der Filter sie ausblendet
         if ($selected !== '' && !$found) {
-            $caption = sprintf($this->Translate('Gewählte Station (%s)'), $selected);
+            $caption = sprintf($this->Translate('Selected station (%s)'), $selected);
             foreach ($stations as $s) {
                 if ($s['uuid'] === $selected) {
                     $caption = $this->StationLabel($s);
@@ -685,7 +685,7 @@ class Pegelstand extends IPSModuleStrict
         }
 
         if (count($stations) === 0) {
-            $options[] = ['caption' => $this->Translate('Stationsliste nicht verfügbar – „Stationsliste neu laden“'), 'value' => ''];
+            $options[] = ['caption' => $this->Translate('Station list not available – “Reload station list”'), 'value' => ''];
         }
 
         return $options;
@@ -772,9 +772,9 @@ class Pegelstand extends IPSModuleStrict
                     'ICON'         => 'chart-line',
                     'DISPLAY'      => 2,
                     'OPTIONS'      => json_encode([
-                        ['Value' => -1, 'Caption' => $this->Translate('fallend'), 'IconActive' => true, 'IconValue' => 'arrow-trend-down', 'Color' => 0x3366FF],
-                        ['Value' => 0, 'Caption' => $this->Translate('gleichbleibend'), 'IconActive' => true, 'IconValue' => 'arrow-right', 'Color' => -1],
-                        ['Value' => 1, 'Caption' => $this->Translate('steigend'), 'IconActive' => true, 'IconValue' => 'arrow-trend-up', 'Color' => 0xFF9900],
+                        ['Value' => -1, 'Caption' => $this->Translate('falling'), 'IconActive' => true, 'IconValue' => 'arrow-trend-down', 'Color' => 0x3366FF],
+                        ['Value' => 0, 'Caption' => $this->Translate('steady'), 'IconActive' => true, 'IconValue' => 'arrow-right', 'Color' => -1],
+                        ['Value' => 1, 'Caption' => $this->Translate('rising'), 'IconActive' => true, 'IconValue' => 'arrow-trend-up', 'Color' => 0xFF9900],
                     ]),
                 ];
             case 'state':
@@ -782,12 +782,12 @@ class Pegelstand extends IPSModuleStrict
                     'PRESENTATION' => $enum,
                     'ICON'         => 'circle-info',
                     'OPTIONS'      => json_encode([
-                        ['Value' => 0, 'Caption' => $this->Translate('unbekannt'), 'IconActive' => false, 'IconValue' => '', 'Color' => -1],
-                        ['Value' => 1, 'Caption' => $this->Translate('niedrig'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0x3366FF],
+                        ['Value' => 0, 'Caption' => $this->Translate('unknown'), 'IconActive' => false, 'IconValue' => '', 'Color' => -1],
+                        ['Value' => 1, 'Caption' => $this->Translate('low'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0x3366FF],
                         ['Value' => 2, 'Caption' => $this->Translate('normal'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0x00AA00],
-                        ['Value' => 3, 'Caption' => $this->Translate('hoch'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0xFF0000],
-                        ['Value' => 4, 'Caption' => $this->Translate('kommentiert'), 'IconActive' => false, 'IconValue' => '', 'Color' => -1],
-                        ['Value' => 5, 'Caption' => $this->Translate('veraltet'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0x999999],
+                        ['Value' => 3, 'Caption' => $this->Translate('high'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0xFF0000],
+                        ['Value' => 4, 'Caption' => $this->Translate('commented'), 'IconActive' => false, 'IconValue' => '', 'Color' => -1],
+                        ['Value' => 5, 'Caption' => $this->Translate('outdated'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0x999999],
                     ]),
                 ];
             case 'warning':
@@ -795,8 +795,8 @@ class Pegelstand extends IPSModuleStrict
                     'PRESENTATION' => $value,
                     'ICON'         => 'triangle-exclamation',
                     'OPTIONS'      => json_encode([
-                        ['Value' => false, 'Caption' => $this->Translate('keine'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0x00AA00],
-                        ['Value' => true, 'Caption' => $this->Translate('Hochwasser'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0xFF0000],
+                        ['Value' => false, 'Caption' => $this->Translate('none'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0x00AA00],
+                        ['Value' => true, 'Caption' => $this->Translate('Flood'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0xFF0000],
                     ]),
                 ];
         }
@@ -807,7 +807,7 @@ class Pegelstand extends IPSModuleStrict
     // Hilfsfunktionen
     // ------------------------------------------------------------------
 
-    private function SetValueIfExists(string $ident, $value): void
+    private function SetValueIfExists(string $ident, mixed $value): void
     {
         if ($this->VariableID($ident) > 0) {
             $this->SetValue($ident, $value);

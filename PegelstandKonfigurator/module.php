@@ -112,7 +112,7 @@ class PegelstandKonfigurator extends IPSModuleStrict
         if ($location === null) {
             foreach ($form['elements'] as &$element) {
                 if (($element['name'] ?? '') === 'MaxDistance') {
-                    $element['caption'] = $this->Translate('Umkreis (nur mit Standort in Kern Instanzen → Location)');
+                    $element['caption'] = $this->Translate('Radius (only with location in Core Instances → Location)');
                 }
             }
             unset($element);
@@ -158,7 +158,7 @@ class PegelstandKonfigurator extends IPSModuleStrict
         if (isset($s['level']) && $s['level'] !== null) {
             $levelText = number_format((float) $s['level'], 0, ',', '.') . ' cm';
             if (!empty($s['levelTime']) && time() - (int) $s['levelTime'] > 3 * 3600) {
-                $levelText .= ' (' . $this->Translate('veraltet') . ')';
+                $levelText .= ' (' . $this->Translate('outdated') . ')';
             }
         }
 
@@ -172,7 +172,7 @@ class PegelstandKonfigurator extends IPSModuleStrict
             'instanceID' => $instanceID,
             'create'     => [
                 'moduleID'      => self::DEVICE_GUID,
-                'name'          => sprintf($this->Translate('Pegel %s'), $this->Nice($s['name'])),
+                'name'          => sprintf($this->Translate('Gauge %s'), $this->Nice($s['name'])),
                 'configuration' => [
                     'StationUUID' => $s['uuid'],
                 ],

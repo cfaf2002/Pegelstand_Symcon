@@ -3,7 +3,7 @@
         {
             "type": "Select",
             "name": "Water",
-            "caption": "Gewässer",
+            "caption": "Waterway",
             "width": "400px",
             "options": []
         },
@@ -13,14 +13,14 @@
                 {
                     "type": "NumberSpinner",
                     "name": "KmFrom",
-                    "caption": "von Fluss-km",
+                    "caption": "from river km",
                     "digits": 1,
                     "minimum": 0
                 },
                 {
                     "type": "NumberSpinner",
                     "name": "KmTo",
-                    "caption": "bis Fluss-km (0 = bis zum Ende)",
+                    "caption": "to river km (0 = to the end)",
                     "digits": 1,
                     "minimum": 0
                 }
@@ -29,38 +29,38 @@
         {
             "type": "NumberSpinner",
             "name": "MaxStations",
-            "caption": "Höchstens so viele Stationen anzeigen",
+            "caption": "Show at most this many stations",
             "minimum": 2,
             "maximum": 30
         },
         {
             "type": "CheckBox",
             "name": "HideLockUpper",
-            "caption": "Schleusen-Oberpegel (OP) ausblenden – sie sind staugeregelt und zeigen keine Welle"
+            "caption": "Hide lock upper gauges (OP) – they are dam-controlled and show no wave"
         },
         {
             "type": "NumberSpinner",
             "name": "Interval",
-            "caption": "Abfrageintervall",
-            "suffix": "Minuten",
+            "caption": "Query interval",
+            "suffix": "minutes",
             "minimum": 5,
             "maximum": 1440
         },
         {
             "type": "Select",
             "name": "TileTheme",
-            "caption": "Farbschema der Kachel",
+            "caption": "Tile color scheme",
             "options": [
                 {
-                    "caption": "Symcon-Design – Farben der Visualisierung",
+                    "caption": "Symcon design – colors of the visualization",
                     "value": 2
                 },
                 {
-                    "caption": "Dunkel",
+                    "caption": "Dark",
                     "value": 0
                 },
                 {
-                    "caption": "Hell",
+                    "caption": "Light",
                     "value": 1
                 }
             ]
@@ -68,22 +68,22 @@
         {
             "type": "CheckBox",
             "name": "TileReduceMotion",
-            "caption": "Animationen reduzieren (für ältere Wandtablets)"
+            "caption": "Reduce animations (for older wall tablets)"
         },
         {
             "type": "Label",
-            "caption": "Jede Säule zeigt den Pegel relativ zu den eigenen Kennwerten der Station: unten mittleres Niedrigwasser (MNW), oben mittleres Hochwasser (MHW). So sind Stationen mit ganz unterschiedlichen Pegelnullpunkten vergleichbar und eine Hochwasserwelle wird sichtbar."
+            "caption": "Each column shows the level relative to the station’s own reference values: mean low water (MNW) at the bottom, mean high water (MHW) at the top. This makes stations with very different gauge zeros comparable and reveals a flood wave."
         }
     ],
     "actions": [
         {
             "type": "Button",
-            "caption": "Jetzt aktualisieren",
+            "caption": "Update now",
             "onClick": "PEGELFB_Update($id);"
         },
         {
             "type": "Button",
-            "caption": "Gewässerliste neu laden",
+            "caption": "Reload waterway list",
             "onClick": "IPS_RequestAction($id, 'ReloadWaters', '');"
         }
     ],
@@ -91,22 +91,22 @@
         {
             "code": 102,
             "icon": "active",
-            "caption": "Flussband wird aktualisiert"
+            "caption": "River band is being updated"
         },
         {
             "code": 104,
             "icon": "inactive",
-            "caption": "Bitte ein Gewässer auswählen"
+            "caption": "Please select a waterway"
         },
         {
             "code": 201,
             "icon": "error",
-            "caption": "PEGELONLINE nicht erreichbar oder fehlerhafte Antwort"
+            "caption": "PEGELONLINE not reachable or invalid response"
         },
         {
             "code": 202,
             "icon": "error",
-            "caption": "Keine Stationen mit Wasserstand im gewählten Abschnitt"
+            "caption": "No stations with water level in the selected section"
         }
     ]
 }

@@ -403,19 +403,30 @@ test('Alle Formularfelder haben eine Eigenschaft', function () use ($now): void 
 // Übersetzung
 // =====================================================================
 
-test('Englische Übersetzung wird verwendet', function () use ($now): void {
-    $locale = json_decode((string) file_get_contents(__DIR__ . '/../Pegelstand/locale.json'), true);
+test('Ohne Übersetzung englisch, mit locale.json deutsch', function () use ($now): void {
     standardFixtures($now, 318.0);
-    Sym::$translations = $locale['translations']['en'];
+    Sym::$translations = [];
     $p = pegel(['StationUUID' => 'uuid-k', 'ShowInsights' => true, 'WarnLevel' => 330]);
     check(str_contains((string) $p->value('Insight'), '23 cm below mean water level'), 'Englische Einordnung erwartet: ' . $p->value('Insight'));
     check($p->value('Forecast') === 'warning threshold in approx. 2 h', 'Englische Prognose erwartet: ' . $p->value('Forecast'));
-    check($p->variables['Level']['name'] === 'Water level', 'Variablenname übersetzt');
+    check($p->variables['Level']['name'] === 'Water level', 'Englischer Variablenname erwartet');
+
+    Sym::reset();
+    standardFixtures($now, 318.0);
+    $p = pegel(['StationUUID' => 'uuid-k', 'ShowInsights' => true, 'WarnLevel' => 330]);
+    check($p->variables['Level']['name'] === 'Pegelstand', 'Deutscher Variablenname erwartet');
+});
+
+test('locale.json im Symcon-Format mit deutscher Übersetzung', function (): void {
+    foreach (glob(__DIR__ . '/../*/locale.json') as $file) {
+        $json = json_decode((string) file_get_contents($file), true);
+        check(isset($json['translations']['de']) && count($json['translations']) === 1, basename(dirname($file)) . ': nur der Schlüssel „de“ erwartet');
+    }
 });
 
 test('Jeder übersetzbare Text steht in locale.json', function (): void {
     $root = __DIR__ . '/..';
-    $locale = json_decode((string) file_get_contents($root . '/Pegelstand/locale.json'), true)['translations']['en'];
+    $locale = json_decode((string) file_get_contents($root . '/Pegelstand/locale.json'), true)['translations']['de'];
     $texts = [];
     foreach (array_merge(glob($root . '/*/module.php'), glob($root . '/libs/*.php')) as $file) {
         $code = (string) file_get_contents($file);

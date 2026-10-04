@@ -992,7 +992,7 @@
             <div class="chips">
                 <span class="chip" id="trend" style="display:none"><span class="arrow" id="arrow">→</span><span class="txt" id="trendtxt"></span></span>
                 <span class="chip fc" id="forecast" style="display:none"></span>
-                <span class="chip ship" id="ship" style="display:none">⚓ <span data-t="Schifffahrt eingestellt">Schifffahrt eingestellt</span></span>
+                <span class="chip ship" id="ship" style="display:none">⚓ <span data-t="Navigation suspended">Navigation suspended</span></span>
             </div>
             <div class="insight" id="insight"></div>
         </div>
@@ -1032,12 +1032,12 @@
         <div class="d-head">
             <div><span id="dTitle">Pegelstand</span> <small id="dRange"></small></div>
             <div class="d-actions">
-                <button class="d-open" id="dOpen" style="display:none"><span data-t="Verlauf öffnen">Verlauf öffnen</span> ↗</button>
+                <button class="d-open" id="dOpen" style="display:none"><span data-t="Open history">Open history</span> ↗</button>
                 <button class="d-close" id="dClose" aria-label="Schließen">✕</button>
             </div>
         </div>
         <div class="d-stats">
-            <div><span data-t="Jetzt">Jetzt</span><b id="dNow">–</b></div>
+            <div><span data-t="Now">Now</span><b id="dNow">–</b></div>
             <div><span data-t="Min">Min</span><b id="dMin">–</b></div>
             <div><span data-t="Max">Max</span><b id="dMax">–</b></div>
             <div><span data-t="Diff">Diff</span><b id="dDelta">–</b></div>
@@ -1065,6 +1065,12 @@
             }
         }
 
+        // „Uhr“ hinter der Uhrzeit nur, wenn die Sprache es vorsieht (Deutsch); Englisch zeigt nur die Zeit
+        function clockSuffix() {
+            var u = T('o\'clock');
+            return u === 'o\'clock' ? '' : ' ' + u;
+        }
+
         function translateStatic(root) {
             Array.prototype.forEach.call(root.querySelectorAll('[data-t]'), function (el) {
                 el.textContent = T(el.getAttribute('data-t'));
@@ -1080,9 +1086,9 @@
             var now = new Date();
             var time = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             if (d.toDateString() === now.toDateString()) {
-                return time + ' ' + T('Uhr');
+                return time + clockSuffix();
             }
-            return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ', ' + time + ' ' + T('Uhr');
+            return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ', ' + time + clockSuffix();
         }
 
         function fmtAxisTime(ts, spanHours) {
@@ -1367,7 +1373,7 @@
         // ---------- Detailansicht ----------
         function renderDetail(d) {
             var hist = Array.isArray(d.history) ? d.history : [];
-            $('dTitle').textContent = d.station ? d.station.toLowerCase() : T('Pegelstand');
+            $('dTitle').textContent = d.station ? d.station.toLowerCase() : T('Water level');
             $('dOpen').style.display = (typeof window.openObject === 'function' && d.openId) ? '' : 'none';
             $('dNow').textContent = typeof d.level === 'number' ? nf0.format(d.level) + ' cm' : '–';
 
@@ -1375,7 +1381,7 @@
             if (hist.length < 2) {
                 $('dRange').textContent = '';
                 $('dMin').textContent = $('dMax').textContent = $('dDelta').textContent = '–';
-                chart.innerHTML = '<div class="d-empty">' + T('Kein Verlauf verfügbar – Verlaufslinie in der Instanz einschalten.') + '</div>';
+                chart.innerHTML = '<div class="d-empty">' + T('No history available – enable the history line in the instance.') + '</div>';
                 return;
             }
 
@@ -1383,7 +1389,7 @@
             var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
             var t0 = hist[0][0], t1 = hist[hist.length - 1][0];
             var spanH = (t1 - t0) / 3600;
-            $('dRange').textContent = T('letzte') + ' ' + (spanH >= 48 ? Math.round(spanH / 24) + ' ' + T('Tage') : Math.round(spanH) + ' ' + T('Std.'));
+            $('dRange').textContent = T('last') + ' ' + (spanH >= 48 ? Math.round(spanH / 24) + ' ' + T('days') : Math.round(spanH) + ' ' + T('h'));
             $('dMin').textContent = nf0.format(min) + ' cm';
             $('dMax').textContent = nf0.format(max) + ' cm';
             $('dDelta').textContent = signed(vals[vals.length - 1] - vals[0]) + ' cm';
@@ -1440,7 +1446,7 @@
             var hasLevel = typeof d.level === 'number';
             var effects = d.effects !== false;
 
-            $('station').textContent = d.station ? d.station.toLowerCase() : T('Pegelstand');
+            $('station').textContent = d.station ? d.station.toLowerCase() : T('Water level');
             $('waterbody').innerHTML = d.water ? d.water.toLowerCase() : '&nbsp;';
             if (hasLevel) {
                 countTo(d.level, $('level'), $('rval'));
@@ -1492,7 +1498,7 @@
                 chip.style.display = '';
                 var rot = d.trend > 0 ? -45 : (d.trend < 0 ? 45 : 0);
                 $('arrow').style.transform = 'rotate(' + rot + 'deg)';
-                var txt = T(d.trend > 0 ? 'steigend' : (d.trend < 0 ? 'fallend' : 'gleichbleibend'));
+                var txt = T(d.trend > 0 ? 'rising' : (d.trend < 0 ? 'falling' : 'steady'));
                 if (typeof d.change === 'number') {
                     txt += ' · ' + signed(d.change) + ' cm / ' + d.trendHours + ' h';
                 }
@@ -1518,8 +1524,8 @@
 
             // Zeit und Abfluss
             var stale = d.measuredAt && (Date.now() / 1000 - d.measuredAt) > 3 * 3600;
-            $('time').textContent = d.measuredAt ? fmtTime(d.measuredAt) + (stale ? ' · ' + T('veraltet') : '') : '';
-            $('discharge').textContent = typeof d.discharge === 'number' ? T('Abfluss') + ' ' + nf1.format(d.discharge) + ' m³/s' : '';
+            $('time').textContent = d.measuredAt ? fmtTime(d.measuredAt) + (stale ? ' · ' + T('outdated') : '') : '';
+            $('discharge').textContent = typeof d.discharge === 'number' ? T('Discharge') + ' ' + nf1.format(d.discharge) + ' m³/s' : '';
 
             // Zustand / Warnung / Fehler
             var badge = $('badge');
@@ -1528,7 +1534,7 @@
                 badge.textContent = d.error;
                 badge.className = 'badge info show';
             } else if (d.warning) {
-                badge.textContent = T('Hochwasser');
+                badge.textContent = T('Flood');
                 badge.className = 'badge show';
             }
 

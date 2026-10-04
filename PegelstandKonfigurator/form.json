@@ -3,35 +3,35 @@
         {
             "type": "ValidationTextBox",
             "name": "WaterFilter",
-            "caption": "Gewässer-Filter (z. B. Rhein, Elbe – leer = alle)"
+            "caption": "Waterway filter (e.g. Rhein, Elbe – empty = all)"
         },
         {
             "type": "NumberSpinner",
             "name": "MaxDistance",
-            "caption": "Umkreis um meinen Standort (0 = alle)",
+            "caption": "Radius around my location (0 = all)",
             "suffix": "km",
             "minimum": 0,
             "maximum": 1000
         },
         {
             "type": "Label",
-            "caption": "Filter mit „Änderungen übernehmen“ anwenden. Bereits angelegte Stationen werden immer angezeigt. Mit Standort in Symcon wird nach Entfernung sortiert."
+            "caption": "Apply the filter with “Apply changes”. Stations already created are always shown. With a location set in Symcon, the list is sorted by distance."
         }
     ],
     "actions": [
         {
             "type": "Button",
-            "caption": "Liste und Pegel neu laden",
+            "caption": "Reload list and levels",
             "onClick": "IPS_RequestAction($id, 'Reload', '');"
         },
         {
             "type": "Label",
-            "caption": "Die Liste wird 10 Minuten zwischengespeichert, damit das Formular schnell öffnet."
+            "caption": "The list is cached for 10 minutes so the form opens quickly."
         },
         {
             "type": "Configurator",
             "name": "Stations",
-            "caption": "Messstationen (PEGELONLINE)",
+            "caption": "Gauging stations (PEGELONLINE)",
             "rowCount": 20,
             "add": false,
             "delete": true,
@@ -46,27 +46,27 @@
                     "width": "auto"
                 },
                 {
-                    "caption": "Gewässer",
+                    "caption": "Waterway",
                     "name": "water",
                     "width": "180px"
                 },
                 {
-                    "caption": "Entfernung (km)",
+                    "caption": "Distance (km)",
                     "name": "distance",
                     "width": "130px"
                 },
                 {
-                    "caption": "Pegel aktuell",
+                    "caption": "Current level",
                     "name": "level",
                     "width": "130px"
                 },
                 {
-                    "caption": "Fluss-km",
+                    "caption": "River km",
                     "name": "km",
                     "width": "90px"
                 },
                 {
-                    "caption": "Betreiber",
+                    "caption": "Operator",
                     "name": "agency",
                     "width": "220px"
                 }
@@ -78,12 +78,12 @@
         {
             "code": 102,
             "icon": "active",
-            "caption": "Stationsliste geladen"
+            "caption": "Station list loaded"
         },
         {
             "code": 201,
             "icon": "error",
-            "caption": "PEGELONLINE nicht erreichbar oder fehlerhafte Antwort"
+            "caption": "PEGELONLINE not reachable or invalid response"
         }
     ]
 }

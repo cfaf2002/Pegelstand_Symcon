@@ -36,7 +36,7 @@ final class Sym
     public static array $fixtures = [];      // API-Pfad => Antwort
     public static array $requests = [];      // abgefragte API-Pfade
     public static array $objects = [];       // InstanzID => Modulobjekt
-    public static array $translations = [];  // aktive Übersetzung (leer = Deutsch)
+    public static array $translations = [];  // aktive Übersetzung (Standard: Deutsch wie in Symcon, leer = Englisch)
 
     public static function reset(): void
     {
@@ -49,7 +49,8 @@ final class Sym
         self::$fixtures = [];
         self::$requests = [];
         self::$objects = [];
-        self::$translations = [];
+        // Wie eine deutsche Symcon-Installation: Übersetzung aus locale.json (de)
+        self::$translations = json_decode((string) file_get_contents(__DIR__ . '/../Pegelstand/locale.json'), true)['translations']['de'];
     }
 
     /** Antwort zu einem API-Pfad: erst exakt, dann ohne Query-String (Zeitraum P30D getrennt) */

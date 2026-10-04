@@ -53,9 +53,9 @@ class PegelstandFlussband extends IPSModuleStrict
 
         $this->SetVisualizationType(1);
 
-        $presentation = ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'water', 'SUFFIX' => ' ' . $this->Translate('Stationen')];
-        $this->MaintainVariable('AboveMHW', $this->Translate('Stationen über mittlerem Hochwasser'), VARIABLETYPE_INTEGER, $presentation, 10, true);
-        $this->MaintainVariable('AboveHSW', $this->Translate('Stationen über HSW (Schifffahrt eingestellt)'), VARIABLETYPE_INTEGER, $presentation, 20, true);
+        $presentation = ['PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION, 'ICON' => 'water', 'SUFFIX' => ' ' . $this->Translate('stations')];
+        $this->MaintainVariable('AboveMHW', $this->Translate('Stations above mean high water'), VARIABLETYPE_INTEGER, $presentation, 10, true);
+        $this->MaintainVariable('AboveHSW', $this->Translate('Stations above HSW (navigation suspended)'), VARIABLETYPE_INTEGER, $presentation, 20, true);
 
         if ($this->ReadPropertyString('Water') === '') {
             $this->SetTimerInterval('Update', 0);
@@ -184,7 +184,7 @@ class PegelstandFlussband extends IPSModuleStrict
 
         if (count($rows) === 0) {
             $this->SetStatus(202);
-            $this->PushTile(['water' => $waterName, 'stations' => [], 'error' => $this->Translate('Keine Stationen im gewählten Abschnitt')]);
+            $this->PushTile(['water' => $waterName, 'stations' => [], 'error' => $this->Translate('No stations in the selected section')]);
             return false;
         }
 
@@ -338,10 +338,10 @@ class PegelstandFlussband extends IPSModuleStrict
             }
         }
 
-        $options = [['caption' => $this->Translate('– bitte wählen –'), 'value' => '']];
+        $options = [['caption' => $this->Translate('– please select –'), 'value' => '']];
         foreach ($waters as $short => $w) {
             $options[] = [
-                'caption' => mb_convert_case(mb_strtolower($w['name']), MB_CASE_TITLE, 'UTF-8') . ' (' . $w['count'] . ' ' . $this->Translate('Stationen') . ')',
+                'caption' => mb_convert_case(mb_strtolower($w['name']), MB_CASE_TITLE, 'UTF-8') . ' (' . $w['count'] . ' ' . $this->Translate('stations') . ')',
                 'value'   => (string) $short,
             ];
         }

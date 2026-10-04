@@ -23,8 +23,8 @@ trait PegelNotifyTrait
      */
     public function TestNotification(): bool
     {
-        $ok = $this->Notify($this->Translate('Pegelstand'), $this->Translate('Testnachricht vom Pegelstand-Modul.'), true);
-        echo $ok ? $this->Translate('Testnachricht wurde gesendet.') : $this->Translate('Senden fehlgeschlagen – Ziel-Instanz, Abo und registrierte Geräte prüfen (siehe Debug).');
+        $ok = $this->Notify($this->Translate('Water level'), $this->Translate('Test message from the water level module.'), true);
+        echo $ok ? $this->Translate('Test message sent.') : $this->Translate('Sending failed – check target instance, subscription and registered devices (see debug).');
         return $ok;
     }
 
@@ -45,16 +45,16 @@ trait PegelNotifyTrait
 
         if (!$active && ($hswHigh || $overLevel)) {
             $active = true;
-            $reason = $hswHigh ? $this->Translate('über dem höchsten Schifffahrtswasserstand (HSW)') : sprintf($this->Translate('über der Warnschwelle von %s cm'), number_format($warnLevel, 0, ',', '.'));
+            $reason = $hswHigh ? $this->Translate('above the highest navigable water level (HSW)') : sprintf($this->Translate('above the warning threshold of %s cm'), number_format($warnLevel, 0, ',', '.'));
             $this->SendDebug('Warnung', 'aktiv: ' . $reason, 0);
-            $this->Notify(sprintf($this->Translate('Hochwasser %s'), $this->Nice($stationName)), sprintf($this->Translate('%s: Pegel %s – %s.'), $place, $levelText, $reason));
+            $this->Notify(sprintf($this->Translate('Flood %s'), $this->Nice($stationName)), sprintf($this->Translate('%s: level %s – %s.'), $place, $levelText, $reason));
         } elseif ($active) {
             $belowLevel = $warnLevel <= 0 || $level < $warnLevel - $hysteresis;
             if (!$hswHigh && $belowLevel) {
                 $active = false;
                 $this->SendDebug('Warnung', 'aufgehoben', 0);
                 if ($this->ReadPropertyBoolean('NotifyClear')) {
-                    $this->Notify(sprintf($this->Translate('Entwarnung %s'), $this->Nice($stationName)), sprintf($this->Translate('%s: Pegel wieder bei %s.'), $place, $levelText));
+                    $this->Notify(sprintf($this->Translate('All clear %s'), $this->Nice($stationName)), sprintf($this->Translate('%s: level back at %s.'), $place, $levelText));
                 }
             }
         }

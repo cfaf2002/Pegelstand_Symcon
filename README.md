@@ -53,7 +53,7 @@ Autor: Armin Frohwerk · Lizenz: MIT
 - Sparsamer Abruf im Takt der Station: abgefragt wird kurz nach dem erwarteten neuen Messwert, gerechnet und an die Kachel gesendet nur bei neuen Daten
 - Robuste Fehlerbehandlung: cURL mit Timeout, Wiederholung nach 2, 5 und 10 Minuten, Fehlerstatus erst nach drei Fehlschlägen in Folge, Debug-Ausgaben
 - Kacheln halten ihre Animationen an, solange sie nicht zu sehen sind, und lassen sich für ältere Wandtablets beruhigen
-- Deutsch und Englisch (Formulare, Variablen, Meldungen und Kacheln)
+- Deutsch und Englisch (Formulare, Variablen, Meldungen und Kacheln) nach Symcon-Konvention: englische Texte im Modul, deutsche Übersetzung in `locale.json`
 - Automatische Tests mit GitHub-Workflow
 
 ## 2. Voraussetzungen und Technik
@@ -284,7 +284,7 @@ Aufbau des Repositorys:
 | `libs/PegelArchiveTrait.php` | Archivierung und Nachladen |
 | `libs/PegelNotifyTrait.php` | Hochwasserwarnung und Push-Nachrichten |
 | `libs/PegelInsightTrait.php` | Einordnung, Rekorde und Prognose |
-| `*/locale.json` | englische Übersetzung |
+| `*/locale.json` | deutsche Übersetzung (Symcon-Format, Schlüssel `de`) |
 | `tests/` | Testumgebung ohne Symcon, Beispieldaten und Testsuite |
 
 Tests lokal ausführen:
