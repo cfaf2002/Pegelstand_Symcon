@@ -305,6 +305,11 @@
                 },
                 {
                     "type": "CheckBox",
+                    "name": "TileShowWhale",
+                    "caption": "Whale passing by now and then"
+                },
+                {
+                    "type": "CheckBox",
                     "name": "TileShowInsights",
                     "caption": "Assessment in words and forecast in the tile"
                 },

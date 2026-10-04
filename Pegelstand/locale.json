@@ -35,6 +35,7 @@
             "Draw reference lines (MNW, MW, MHW, HSW, own warning threshold)": "Kennwert-Linien (MNW, MW, MHW, HSW, eigene Warnschwelle) einzeichnen",
             "Each column shows the level relative to the station’s own reference values: mean low water (MNW) at the bottom, mean high water (MHW) at the top. This makes stations with very different gauge zeros comparable and reveals a flood wave.": "Jede Säule zeigt den Pegel relativ zu den eigenen Kennwerten der Station: unten mittleres Niedrigwasser (MNW), oben mittleres Hochwasser (MHW). So sind Stationen mit ganz unterschiedlichen Pegelnullpunkten vergleichbar und eine Hochwasserwelle wird sichtbar.",
             "Fish school in the water": "Fischschwarm im Wasser",
+            "Whale passing by now and then": "Wal schwimmt ab und zu vorbei",
             "Flood": "Hochwasser",
             "Flood %s": "Hochwasser %s",
             "Flood warning": "Hochwasserwarnung",

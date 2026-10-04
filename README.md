@@ -153,6 +153,7 @@ Ausgelöst wird, wenn PEGELONLINE „über HSW“ meldet oder der Pegel die eige
 | Sonne, Mond und Wolken | an | Sonne mit Korona und Strahlen nach echtem Sonnenstand, nachts der Mond in der aktuellen Phase, dazu weiche Haufenwolken in zwei Ebenen |
 | Schiff | an | Modernes Binnen-Containerschiff (flacher Rumpf, Container mit Wellblech-Struktur, hochgesetztes Steuerhaus mit Panoramaverglasung, Radar, LED-Lichter, Schatten auf dem Wasser) mit Bugwelle und Kielwasser, das langsam flussabwärts fährt; nachts mit beleuchtetem Steuerhaus und Positionslichtern. Liegt der Pegel über HSW, ist die Schifffahrt eingestellt: Das Schiff liegt vor Anker und ein Hinweis erscheint |
 | Fischschwarm | an | Ein Schwarm zieht in ruhigen Bahnen durchs Wasser; hält an, wenn die Kachel nicht zu sehen ist |
+| Wal | an | Ein Buckelwal gleitet alle ein bis zwei Minuten durchs tiefe Wasser, taucht kurz auf und bläst eine Fontäne; ab etwa 200 px Kachelbreite, nicht im Ring-Layout |
 | Einordnung und Prognose | an | Zeigt die Einordnung in Worten und die Prognose in der Kachel |
 | Strömung und Regen | an | Steigt der Pegel, zieht das Wasser schneller und mit Strömungsstreifen; fällt er, beruhigt es sich. Bei Hochwasser regnet es |
 | Animationen reduzieren | aus | Schaltet Sterne, Wolken, Strömung, Regen und Schaukeln ab und verlangsamt die Wellen – für ältere Wandtablets |
@@ -287,7 +288,7 @@ Aktualisiert das Flussband sofort.
 **Leistung**
 - Abruf im Takt der Station; ohne neuen Messwert wird nichts neu berechnet und nichts an die Kachel geschickt.
 - Konfigurator und Stationsliste werden zwischengespeichert, das verkleinerte Hintergrundbild ebenfalls (neu nur bei geändertem Medienobjekt).
-- Kachel-Animationen halten an, sobald die Kachel nicht zu sehen ist; der Fischschwarm zeichnet höchstens 30 Bilder pro Sekunde.
+- Kachel-Animationen halten an, sobald die Kachel nicht zu sehen ist; Fischschwarm und Wal zeichnen höchstens 30 Bilder pro Sekunde; zwischen zwei Auftritten des Wals läuft nur ein Timer.
 
 ## 9. Entwicklung und Tests
 

@@ -881,6 +881,24 @@
     #tile.sym-light, #tile.theme-light { --fish: rgba(0, 60, 90, .22); }
     #tile.st-warn { --fish: rgba(60, 0, 10, .3); }
 
+    /* ---------- Wal ---------- */
+    .whale {
+        position: absolute;
+        z-index: 2;
+        left: 0;
+        right: 0;
+        /* reicht 40px über die Wasserlinie, damit die Blasfontäne Platz hat */
+        top: -40px;
+        width: 100%;
+        height: calc(100% + 40px);
+        pointer-events: none;
+        display: none;
+    }
+
+    #tile.show-whale .whale { display: block; }
+    #tile { --whale-back: #17344c; --whale-belly: #a9c0cf; }
+    #tile.sym-light, #tile.theme-light { --whale-back: #24506f; --whale-belly: #cddbe4; }
+
     /* ---------- Lichtspiel im Wasser ---------- */
     .caustics {
         position: absolute;
@@ -1103,7 +1121,7 @@
         animation: none !important;
     }
 
-    #tile.calm .current, #tile.calm .rain, #tile.calm .fish {
+    #tile.calm .current, #tile.calm .rain, #tile.calm .fish, #tile.calm .whale {
         display: none !important;
     }
 
@@ -1228,6 +1246,7 @@
         <canvas class="sea" id="sea"></canvas>
         <i id="seaProbe" style="display:none"></i>
         <div class="caustics"></div>
+        <canvas class="whale" id="whale"></canvas>
         <canvas class="fish" id="fish"></canvas>
         <div class="current" id="current"></div>
         <div class="shine"></div>
@@ -1851,6 +1870,263 @@
             }
         }
 
+        // ---------- Wal (Canvas) ----------
+        // Zieht ab und zu gemächlich durchs tiefe Wasser, taucht in der Mitte
+        // kurz unter die Oberfläche auf und bläst eine Fontäne. Zwischen zwei
+        // Auftritten läuft kein Zeichen-Loop, nur ein Timer.
+        var whale = {
+            on: false, raf: 0, timer: 0, t: 0, last: 0,
+            run: null, spray: [], back: '#17344c', belly: '#a9c0cf'
+        };
+
+        function whaleStart() {
+            whale.timer = 0;
+            if (!whale.on) return;
+            whale.run = {
+                dir: Math.random() < 0.5 ? 1 : -1,
+                p: 0,
+                dur: 38 + Math.random() * 14,      // Sekunden für eine Durchquerung
+                rise: 0.38 + Math.random() * 0.22, // wo er auftaucht (Anteil der Strecke)
+                depth: 0.62 + Math.random() * 0.12,
+                blown: false
+            };
+            whale.spray = [];
+            whale.last = 0;
+            whale.raf = requestAnimationFrame(drawWhale);
+        }
+
+        function whaleWait(sec) {
+            if (whale.raf) cancelAnimationFrame(whale.raf);
+            whale.raf = 0;
+            if (whale.timer) clearTimeout(whale.timer);
+            whale.timer = setTimeout(whaleStart, sec * 1000);
+        }
+
+        function whaleShape(ctx, L, t) {
+            var fl = Math.sin(t * 1.25);           // Fluke schlägt langsam auf und ab
+            var fin = Math.sin(t * 1.25 + 1.2);
+
+            // Brustflosse auf der abgewandten Seite (dunkler, dahinter)
+            ctx.fillStyle = whale.back;
+            ctx.globalAlpha = 0.55;
+            ctx.beginPath();
+            ctx.moveTo(L * 0.16, L * 0.06);
+            ctx.quadraticCurveTo(L * 0.05, L * (0.2 + fin * 0.02), L * -0.06, L * (0.22 + fin * 0.03));
+            ctx.quadraticCurveTo(L * 0.06, L * 0.12, L * 0.2, L * 0.07);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            // Schwanzstiel + Fluke
+            var fy = fl * L * 0.05;
+            ctx.beginPath();
+            ctx.moveTo(L * -0.3, L * -0.05);
+            ctx.quadraticCurveTo(L * -0.42, L * -0.02 + fy * 0.4, L * -0.47, fy * 0.7);
+            ctx.quadraticCurveTo(L * -0.42, L * 0.03 + fy * 0.4, L * -0.3, L * 0.05);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(L * -0.46, fy * 0.7);
+            ctx.quadraticCurveTo(L * -0.52, L * -0.07 + fy, L * -0.6, L * -0.09 + fy * 1.3);
+            ctx.quadraticCurveTo(L * -0.555, fy * 0.9, L * -0.585, L * 0.02 + fy * 1.1);
+            ctx.quadraticCurveTo(L * -0.53, L * 0.035 + fy, L * -0.46, fy * 0.7);
+            ctx.fill();
+
+            // Körper: Rücken dunkel, Bauch hell
+            ctx.beginPath();
+            ctx.moveTo(L * 0.5, L * 0.015);
+            ctx.bezierCurveTo(L * 0.46, L * -0.1, L * 0.22, L * -0.15, L * 0.02, L * -0.13);
+            ctx.bezierCurveTo(L * -0.14, L * -0.12, L * -0.26, L * -0.07, L * -0.33, L * -0.04);
+            ctx.lineTo(L * -0.33, L * 0.04);
+            ctx.bezierCurveTo(L * -0.2, L * 0.1, L * 0.02, L * 0.15, L * 0.22, L * 0.12);
+            ctx.bezierCurveTo(L * 0.38, L * 0.1, L * 0.48, L * 0.07, L * 0.5, L * 0.015);
+            ctx.closePath();
+            var g = ctx.createLinearGradient(0, L * -0.14, 0, L * 0.14);
+            g.addColorStop(0, whale.back);
+            g.addColorStop(0.55, whale.back);
+            g.addColorStop(0.78, whale.belly);
+            g.addColorStop(1, whale.belly);
+            ctx.fillStyle = g;
+            ctx.fill();
+
+            // Kehlfurchen, auf den Körper begrenzt
+            ctx.save();
+            ctx.clip();
+            ctx.strokeStyle = 'rgba(20, 45, 65, .28)';
+            ctx.lineWidth = Math.max(0.6, L * 0.004);
+            for (var k = 0; k < 4; k++) {
+                var yy = L * (0.055 + k * 0.016);
+                ctx.beginPath();
+                ctx.moveTo(L * (0.5 - k * 0.02), yy - L * 0.02);
+                ctx.quadraticCurveTo(L * 0.25, yy + L * 0.012, L * (0.06 + k * 0.02), yy);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // Rückenfinne
+            ctx.fillStyle = whale.back;
+            ctx.beginPath();
+            ctx.moveTo(L * -0.12, L * -0.115);
+            ctx.quadraticCurveTo(L * -0.17, L * -0.165, L * -0.2, L * -0.16);
+            ctx.quadraticCurveTo(L * -0.19, L * -0.12, L * -0.2, L * -0.095);
+            ctx.closePath();
+            ctx.fill();
+
+            // Lichtkante auf dem Rücken
+            ctx.strokeStyle = 'rgba(255, 255, 255, .22)';
+            ctx.lineWidth = Math.max(1, L * 0.008);
+            ctx.beginPath();
+            ctx.moveTo(L * 0.42, L * -0.07);
+            ctx.bezierCurveTo(L * 0.3, L * -0.13, L * 0.1, L * -0.135, L * -0.08, L * -0.12);
+            ctx.stroke();
+
+            // Auge und Maul
+            ctx.fillStyle = 'rgba(8, 20, 30, .85)';
+            ctx.beginPath();
+            ctx.arc(L * 0.33, L * 0.035, Math.max(1, L * 0.011), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(8, 20, 30, .45)';
+            ctx.beginPath();
+            ctx.moveTo(L * 0.49, L * 0.03);
+            ctx.quadraticCurveTo(L * 0.42, L * 0.06, L * 0.33, L * 0.055);
+            ctx.stroke();
+
+            // Brustflosse vorne (lang, typisch Buckelwal)
+            ctx.fillStyle = whale.belly;
+            ctx.globalAlpha = 0.9;
+            ctx.beginPath();
+            ctx.moveTo(L * 0.2, L * 0.075);
+            ctx.quadraticCurveTo(L * 0.1, L * (0.2 + fin * 0.03), L * -0.04, L * (0.26 + fin * 0.04));
+            ctx.quadraticCurveTo(L * 0.08, L * 0.13, L * 0.25, L * 0.09);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+
+        function drawWhale(ts) {
+            var c = $('whale');
+            if (!whale.on || !c || !whale.run) return;
+            whale.raf = requestAnimationFrame(drawWhale);
+            if (whale.last && ts - whale.last < 32) return;
+            var dt = whale.last ? Math.min(0.08, (ts - whale.last) / 1000) : 0.033;
+            whale.last = ts;
+            whale.t += dt;
+
+            var dpr = window.devicePixelRatio || 1;
+            var w = c.clientWidth, h = c.clientHeight, top = 40;
+            var wh = h - top;                         // Höhe des eigentlichen Wassers
+            if (w < 200 || wh < 70) {                 // zu klein: lieber kein Wal als ein gequetschter
+                c.getContext('2d').clearRect(0, 0, c.width, c.height);
+                whaleWait(20);
+                return;
+            }
+            if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
+                c.width = Math.round(w * dpr);
+                c.height = Math.round(h * dpr);
+            }
+            var ctx = c.getContext('2d');
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+
+            var r = whale.run, t = whale.t;
+            r.p += dt / r.dur;
+            var L = Math.min(w * 0.22, wh * 0.9, 150);
+            var span = w + L * 1.4;
+            var x = r.dir > 0 ? -L * 0.7 + r.p * span : w + L * 0.7 - r.p * span;
+
+            // Tiefe: unten gleiten, um r.rise herum sanft zur Oberfläche und wieder hinab
+            var u = (r.p - r.rise) / 0.17;
+            var lift = Math.abs(u) < 1 ? 0.5 + 0.5 * Math.cos(u * Math.PI) : 0;
+            var deepY = top + wh * r.depth + Math.sin(t * 0.4) * wh * 0.03;
+            var highY = top + L * 0.15 + 3;              // Rücken knapp unter der Wasserlinie
+            var y = deepY + (highY - deepY) * lift;
+            var pitch = Math.abs(u) < 1 ? -Math.sin(u * Math.PI) * 0.16 : Math.sin(t * 0.4 + 1) * 0.03;
+
+            // je tiefer, desto mehr verschwindet er im Wasser
+            ctx.save();
+            ctx.globalAlpha = 0.5 + 0.38 * lift;
+            ctx.translate(x, y);
+            ctx.scale(r.dir, 1);
+            ctx.rotate(pitch);
+            whaleShape(ctx, L, t);
+            ctx.restore();
+
+            // Blasloch in Weltkoordinaten
+            var bx = x + r.dir * Math.cos(pitch) * L * 0.2;
+            var surf = top + Math.sin(bx * 0.017 + sea.t * 1.05) * 2;
+
+            // Fontäne am höchsten Punkt
+            if (!r.blown && lift > 0.97) {
+                r.blown = true;
+                r.blowT = 1.4;
+            }
+            if (r.blowT > 0) {
+                r.blowT -= dt;
+                for (var n = 0; n < 6; n++) {
+                    whale.spray.push({
+                        x: bx + (Math.random() - 0.5) * 3,
+                        y: surf,
+                        vx: (Math.random() - 0.5) * 16 + r.dir * 4,
+                        vy: -(55 + Math.random() * 45) * Math.sqrt(Math.min(1, L / 240)),
+                        life: 1, size: (1 + Math.random() * 1.6) * Math.max(0.6, Math.min(1, L / 150))
+                    });
+                }
+            }
+            if (whale.spray.length) {
+                ctx.fillStyle = '#ffffff';
+                whale.spray = whale.spray.filter(function (s) {
+                    s.vy += 70 * dt;
+                    s.x += s.vx * dt;
+                    s.y += s.vy * dt;
+                    s.vx *= 0.98;
+                    s.life -= dt * 0.75;
+                    if (s.life <= 0 || s.y > surf + 2) return false;
+                    ctx.globalAlpha = Math.max(0, s.life) * 0.75;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.size * (1.6 - s.life * 0.6), 0, Math.PI * 2);
+                    ctx.fill();
+                    return true;
+                });
+                ctx.globalAlpha = 1;
+            }
+
+            // ein paar Luftblasen, solange er oben ist
+            if (lift > 0.3) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, .35)';
+                ctx.lineWidth = 1;
+                for (var b = 0; b < 4; b++) {
+                    var by = y - L * 0.12 - ((t * 18 + b * 9) % (Math.max(8, y - top - L * 0.12)));
+                    ctx.beginPath();
+                    ctx.arc(bx + Math.sin(t * 2 + b) * 3, by, 1.2 + b * 0.3, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            if (r.p >= 1 && !whale.spray.length) {
+                ctx.clearRect(0, 0, w, h);
+                whale.run = null;
+                whaleWait(45 + Math.random() * 60);   // nächster Auftritt in 45–105 s
+            }
+        }
+
+        function setWhale(on) {
+            if (on === whale.on) return;
+            whale.on = on;
+            if (on) {
+                // beim Einblenden nicht gleich, aber bald – ein angefangener Zug läuft weiter
+                if (whale.run) {
+                    whale.last = 0;
+                    whale.raf = requestAnimationFrame(drawWhale);
+                } else {
+                    whaleWait(6);
+                }
+            } else {
+                if (whale.raf) cancelAnimationFrame(whale.raf);
+                if (whale.timer) clearTimeout(whale.timer);
+                whale.raf = 0;
+                whale.timer = 0;
+            }
+        }
+
         // ---------- Wert hochzählen ----------
         function countTo(target, el, ringEl) {
             if (countAnim) cancelAnimationFrame(countAnim);
@@ -2149,6 +2425,8 @@
             if (d.boat !== false && hasLevel) classes.push('show-boat');
             var fishOn = d.fish !== false && hasLevel && !d.calm;
             if (fishOn) classes.push('show-fish');
+            var whaleOn = d.whale !== false && hasLevel && !d.calm;
+            if (whaleOn) classes.push('show-whale');
             if (d.shipping === 'stopped') classes.push('anchored');
             if (background) classes.push('has-bg');
             if (hasLevel && useRing(d)) {
@@ -2161,6 +2439,9 @@
             }
             $('bgdim').style.opacity = ((d.bgDim || 0) / 100).toFixed(2);
             fish.color = getComputedStyle(tile).getPropertyValue('--fish').trim() || fish.color;
+            var cs = getComputedStyle(tile);
+            whale.back = cs.getPropertyValue('--whale-back').trim() || whale.back;
+            whale.belly = cs.getPropertyValue('--whale-belly').trim() || whale.belly;
 
             // Wasser: Farben aus dem Design, Wellenhöhe nach Tendenz, Glitzern unter Sonne/Mond
             tile.classList.add('has-sea');
@@ -2175,6 +2456,7 @@
             if (!sea.parts.length) seaInit();
             setSea(hasLevel && !paused && !d.calm && classes.indexOf('layout-ring') < 0);
             setFish(fishOn && !paused && classes.indexOf('layout-ring') < 0);
+            setWhale(whaleOn && !paused && classes.indexOf('layout-ring') < 0);
 
             if ($('detail').classList.contains('open')) {
                 renderDetail(d);
@@ -2208,6 +2490,7 @@
                 paused = p;
                 $('tile').classList.toggle('paused', p);
                 setFish(!p && $('tile').classList.contains('show-fish') && !$('tile').classList.contains('layout-ring'));
+                setWhale(!p && $('tile').classList.contains('show-whale') && !$('tile').classList.contains('layout-ring'));
                 setSea(!p && !(last && last.calm) && !$('tile').classList.contains('layout-ring'));
             }
         }
