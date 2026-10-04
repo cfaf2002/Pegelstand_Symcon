@@ -381,6 +381,17 @@ test('Flussband: Schleusen-OP aus, relative Lage, Tendenz sofort, Öffnen', func
     check($f->value('AboveMHW') === 0, 'Keine Station über MHW erwartet');
 });
 
+test('Flussband: eigene Stationen bleiben trotz Höchstzahl drin', function () use ($now): void {
+    moselFixtures($now);
+    Sym::$instances[4720] = ['module' => GUID_PEGELSTAND, 'props' => ['StationUUID' => '', 'StationManual' => 'Zeltingen UP']];
+    Sym::$instances[4721] = ['module' => GUID_PEGELSTAND, 'props' => ['StationUUID' => 'm5']];
+    $f = flussband(['Water' => 'MOSEL', 'MaxStations' => 3]);
+    $names = array_column(tileData($f)['stations'] ?? [], 'name');
+    check(in_array('ZELTINGEN UP', $names, true), 'Per Direkteingabe angelegte Station muss drin sein: ' . implode(', ', $names));
+    check(in_array('TRIER UP', $names, true), 'Per Auswahl angelegte Station muss drin sein');
+    check($names[0] === 'LEHMEN UP' && end($names) === 'PERL', 'Erste und letzte Station bleiben');
+});
+
 test('Flussband: Stationen ohne Kennwerte nur auf Wunsch', function () use ($now): void {
     moselFixtures($now);
     $f = flussband(['Water' => 'MOSEL', 'HideLockUpper' => false]);

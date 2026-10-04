@@ -185,18 +185,32 @@ class PegelstandFlussband extends IPSModuleStrict
         usort($rows, static function (array $a, array $b): int {
             return ($a['km'] ?? 0.0) <=> ($b['km'] ?? 0.0);
         });
-        $rows = $this->Sample($rows, max(2, $this->ReadPropertyInteger('MaxStations')));
+        // Vorhandene Pegelstand-Instanzen (per Auswahl oder Direkteingabe): immer im Band, direkt zu öffnen
+        $instances = [];
+        $byName = [];
+        foreach (IPS_GetInstanceListByModuleID('{357D9512-5653-4253-8279-DA569FEB0E1E}') as $instanceID) {
+            $uuid = (string) IPS_GetProperty($instanceID, 'StationUUID');
+            if ($uuid !== '') {
+                $instances[$uuid] = $instanceID;
+            }
+            $manual = mb_strtoupper(trim((string) @IPS_GetProperty($instanceID, 'StationManual')));
+            if ($manual !== '') {
+                $byName[$manual] = $instanceID;
+            }
+        }
+        foreach ($rows as $r) {
+            $name = mb_strtoupper($r['name']);
+            if (!isset($instances[$r['uuid']]) && (isset($byName[$name]) || isset($byName[strtoupper($r['uuid'])]))) {
+                $instances[$r['uuid']] = $byName[$name] ?? $byName[strtoupper($r['uuid'])];
+            }
+        }
+
+        $rows = $this->Sample($rows, max(2, $this->ReadPropertyInteger('MaxStations')), array_keys($instances));
 
         if (count($rows) === 0) {
             $this->SetStatus(202);
             $this->PushTile(['water' => $waterName, 'stations' => [], 'error' => $this->Translate('No stations in the selected section')]);
             return false;
-        }
-
-        // Vorhandene Pegelstand-Instanzen, damit die Kachel sie direkt öffnen kann
-        $instances = [];
-        foreach (IPS_GetInstanceListByModuleID('{357D9512-5653-4253-8279-DA569FEB0E1E}') as $instanceID) {
-            $instances[(string) IPS_GetProperty($instanceID, 'StationUUID')] = $instanceID;
         }
 
         // Verlauf der letzten Stunden je Station für die Tendenz fortschreiben
@@ -302,15 +316,45 @@ class PegelstandFlussband extends IPSModuleStrict
     /**
      * Wählt gleichmäßig verteilt höchstens $max Stationen aus (erste und letzte bleiben immer).
      */
-    private function Sample(array $rows, int $max): array
+    private function Sample(array $rows, int $max, array $keep = []): array
     {
         $n = count($rows);
         if ($n <= $max) {
             return $rows;
         }
+        // Pflicht: erste und letzte Station sowie alle mit eigener Pegelstand-Instanz
+        $chosen = [0 => true, $n - 1 => true];
+        foreach ($rows as $i => $r) {
+            if (in_array($r['uuid'], $keep, true)) {
+                $chosen[$i] = true;
+            }
+        }
+        // Rest gleichmäßig verteilt auffüllen: jeweils die Station, die am weitesten von den gewählten entfernt ist
+        while (count($chosen) < $max) {
+            $best = -1;
+            $bestGap = -1;
+            for ($i = 0; $i < $n; $i++) {
+                if (isset($chosen[$i])) {
+                    continue;
+                }
+                $gap = PHP_INT_MAX;
+                foreach (array_keys($chosen) as $c) {
+                    $gap = min($gap, abs($c - $i));
+                }
+                if ($gap > $bestGap) {
+                    $bestGap = $gap;
+                    $best = $i;
+                }
+            }
+            if ($best < 0) {
+                break;
+            }
+            $chosen[$best] = true;
+        }
+        ksort($chosen);
         $result = [];
-        for ($i = 0; $i < $max; $i++) {
-            $result[] = $rows[(int) round($i * ($n - 1) / ($max - 1))];
+        foreach (array_keys($chosen) as $i) {
+            $result[] = $rows[$i];
         }
         return $result;
     }
