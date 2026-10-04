@@ -246,9 +246,40 @@ test('Stationsauswahl nach Entfernung sortiert', function () use ($now): void {
     standardFixtures($now);
     $p = pegel(['StationUUID' => 'uuid-k']);
     $form = json_decode($p->GetConfigurationForm(), true);
-    $options = $form['elements'][0]['items'][3]['options'] ?? [];
+    $select = array_values(array_filter($form['elements'][0]['items'], static fn ($e) => ($e['name'] ?? '') === 'StationUUID'))[0];
+    $options = $select['options'] ?? [];
+    $hint = array_values(array_filter($form['elements'][0]['items'], static fn ($e) => ($e['name'] ?? '') === 'StationListError'))[0];
+    check($hint['visible'] === false, 'Ohne Fehler kein Fehlerhinweis');
     check(str_starts_with($options[1]['caption'] ?? '', 'Bonn'), 'Bonn als nächste Station erwartet: ' . ($options[1]['caption'] ?? '–'));
     check(str_contains($options[1]['caption'] ?? '', 'km entfernt'), 'Entfernung im Text erwartet');
+});
+
+test('Stationsliste nicht ladbar: Grund im Formular, Direkteingabe funktioniert', function () use ($now): void {
+    Sym::$fixtures['__fail'] = 0;
+    $p = pegel();
+    $form = json_decode($p->GetConfigurationForm(), true);
+    $items = $form['elements'][0]['items'];
+    $hint = array_values(array_filter($items, static fn ($e) => ($e['name'] ?? '') === 'StationListError'))[0];
+    check($hint['visible'] === true, 'Fehlerhinweis muss sichtbar sein');
+    check(str_contains($hint['caption'], 'Station unten direkt eintragen'), 'Hinweis auf Direkteingabe erwartet');
+    check(in_array('StationManual', array_column($items, 'name'), true), 'Feld für Direkteingabe erwartet');
+
+    // Station per Name eintragen
+    $station = fixtureStation(318.0, $now - 600);
+    Sym::$fixtures['stations/KONSTANZ.json'] = $station;
+    Sym::$fixtures['stations/KONSTANZ/W/measurements.json'] = fixtureSeries($now - 600, 24, 318.0, 6.0);
+    $p->prop('StationManual', 'KONSTANZ');
+    $p->ApplyChanges();
+    check($p->status === 102 && $p->value('Level') === 318.0, 'Mit Direkteingabe KONSTANZ muss der Pegel kommen');
+
+    // Liste wieder erreichbar: Hinweis verschwindet
+    Sym::$fixtures['stations.json?timeseries=W'] = fixtureStationList($now);
+    ob_start();
+    $p->RequestAction('ReloadStations', '');
+    ob_end_clean();
+    $form = json_decode($p->GetConfigurationForm(), true);
+    $hint = array_values(array_filter($form['elements'][0]['items'], static fn ($e) => ($e['name'] ?? '') === 'StationListError'))[0];
+    check($hint['visible'] === false, 'Nach erfolgreichem Neuladen kein Fehlerhinweis');
 });
 
 // =====================================================================
@@ -352,7 +383,8 @@ test('Alle Formularfelder haben eine Eigenschaft', function () use ($now): void 
         $names = [];
         $walk = function (array $items) use (&$walk, &$names): void {
             foreach ($items as $e) {
-                if (isset($e['name']) && ($e['type'] ?? '') !== 'Configurator') {
+                // Labels und Configuratoren tragen Namen nur zum Ansteuern, ohne Eigenschaft
+                if (isset($e['name']) && !in_array($e['type'] ?? '', ['Configurator', 'Label'], true)) {
                     $names[] = $e['name'];
                 }
                 if (isset($e['items'])) {

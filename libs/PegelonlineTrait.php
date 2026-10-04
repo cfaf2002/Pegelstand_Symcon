@@ -22,6 +22,9 @@ trait PegelonlineTrait
 {
     private static string $apiBase = 'https://www.pegelonline.wsv.de/webservices/rest-api/v2/';
 
+    /** Grund des letzten fehlgeschlagenen Abrufs (für Formular und Debug) */
+    protected string $apiError = '';
+
     // Symcon-Kerninstanz "Location Control" (Standort)
     private static string $locationGuid = '{45E97A63-F870-408A-B259-2933F7EABF74}';
 
@@ -49,9 +52,11 @@ trait PegelonlineTrait
         ]);
         $body = curl_exec($ch);
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $this->apiError = '';
 
         if ($body === false) {
-            $this->SendDebug('Fehler', 'cURL: ' . curl_error($ch), 0);
+            $this->apiError = 'cURL-Fehler ' . curl_errno($ch) . ': ' . curl_error($ch);
+            $this->SendDebug('Fehler', $this->apiError, 0);
             $httpCode = 0;
             return null;
         }
@@ -59,12 +64,14 @@ trait PegelonlineTrait
         $this->SendDebug('Response', 'HTTP ' . $httpCode . ' (' . strlen((string) $body) . ' Bytes): ' . substr((string) $body, 0, 1500), 0);
 
         if ($httpCode !== 200) {
+            $this->apiError = 'HTTP ' . $httpCode;
             return null;
         }
 
         $json = json_decode((string) $body, true);
         if (!is_array($json)) {
-            $this->SendDebug('Fehler', 'Antwort ist kein gültiges JSON', 0);
+            $this->apiError = 'Antwort ist kein gültiges JSON';
+            $this->SendDebug('Fehler', $this->apiError, 0);
             return null;
         }
         return $json;

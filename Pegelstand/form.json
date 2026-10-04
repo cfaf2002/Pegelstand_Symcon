@@ -31,11 +31,23 @@
                     "caption": "Nach Entfernung zu meinem Standort sortieren"
                 },
                 {
+                    "type": "Label",
+                    "name": "StationListError",
+                    "caption": "",
+                    "visible": false
+                },
+                {
                     "type": "Select",
                     "name": "StationUUID",
                     "caption": "Messstation",
                     "width": "600px",
                     "options": []
+                },
+                {
+                    "type": "ValidationTextBox",
+                    "name": "StationManual",
+                    "caption": "oder Station direkt eintragen (Name wie KONSTANZ oder UUID – gilt, wenn oben nichts gewählt ist)",
+                    "width": "600px"
                 }
             ]
         },

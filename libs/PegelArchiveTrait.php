@@ -25,7 +25,7 @@ trait PegelArchiveTrait
      */
     public function BackfillArchive(): int
     {
-        $uuid = $this->ReadPropertyString('StationUUID');
+        $uuid = $this->StationID();
         $archive = $this->ArchiveID();
         if ($uuid === '' || $archive === 0) {
             $this->SendDebug('Archiv', 'Keine Station oder kein Archiv vorhanden.', 0);

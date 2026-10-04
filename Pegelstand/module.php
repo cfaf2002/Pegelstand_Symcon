@@ -46,6 +46,7 @@ class Pegelstand extends IPSModuleStrict
 
         // Messstation
         $this->RegisterPropertyString('StationUUID', '');
+        $this->RegisterPropertyString('StationManual', '');
         $this->RegisterPropertyString('WaterFilter', '');
         $this->RegisterPropertyBoolean('SortByDistance', true);
 
@@ -89,6 +90,7 @@ class Pegelstand extends IPSModuleStrict
         $this->RegisterPropertyBoolean('TileEffects', true);
 
         $this->RegisterAttributeString('StationCache', '[]');
+        $this->RegisterAttributeString('StationListError', '');
         $this->RegisterAttributeString('CharIdents', '[]');
         $this->RegisterAttributeString('LastStation', '');
         $this->RegisterAttributeString('TileData', '{}');
@@ -141,7 +143,7 @@ class Pegelstand extends IPSModuleStrict
         $this->Variable('Forecast', 'Prognose', VARIABLETYPE_STRING, 'forecast', 81, $insights);
 
         // Kennwerte entfernen, wenn abgeschaltet oder Station gewechselt
-        $uuid = $this->ReadPropertyString('StationUUID');
+        $uuid = $this->StationID();
         if (!$this->ReadPropertyBoolean('ShowCharacteristics') || $uuid !== $this->ReadAttributeString('LastStation')) {
             $this->RemoveCharacteristicVariables([]);
         }
@@ -177,7 +179,7 @@ class Pegelstand extends IPSModuleStrict
 
     public function MessageSink(int $TimeStamp, int $SenderID, int $Message, array $Data): void
     {
-        if ($Message === IPS_KERNELSTARTED && $this->ReadPropertyString('StationUUID') !== '') {
+        if ($Message === IPS_KERNELSTARTED && $this->StationID() !== '') {
             $this->ApplyArchive();
             $this->Update();
         }
@@ -188,11 +190,14 @@ class Pegelstand extends IPSModuleStrict
         switch ($Ident) {
             case 'ReloadStations':
                 $stations = $this->FetchStations();
-                if ($stations === null) {
-                    echo $this->Translate('Stationsliste konnte nicht von PEGELONLINE geladen werden.');
+                if ($stations === null || count($stations) === 0) {
+                    $this->WriteAttributeString('StationListError', $this->apiError !== '' ? $this->apiError : $this->Translate('leere Antwort'));
+                    echo $this->Translate('Stationsliste konnte nicht von PEGELONLINE geladen werden.') . ' (' . $this->ReadAttributeString('StationListError') . ')';
                     return;
                 }
                 $this->WriteAttributeString('StationCache', json_encode($stations));
+                $this->WriteAttributeString('StationListError', '');
+                $this->UpdateFormField('StationListError', 'visible', false);
                 $this->UpdateStationSelect((string) $Value);
                 break;
 
@@ -210,6 +215,14 @@ class Pegelstand extends IPSModuleStrict
         $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
         $options = $this->BuildStationOptions($this->ReadPropertyString('WaterFilter'));
         $this->InjectOptions($form['elements'], 'StationUUID', $options);
+
+        // Liste nicht ladbar: Grund anzeigen und auf die Direkteingabe hinweisen
+        $error = $this->ReadAttributeString('StationListError');
+        $this->InjectProperty($form['elements'], 'StationListError', 'visible', $error !== '');
+        $this->InjectProperty($form['elements'], 'StationListError', 'caption', sprintf(
+            $this->Translate('Stationsliste konnte nicht geladen werden (%s). Station unten direkt eintragen oder „Stationsliste neu laden“.'),
+            $error
+        ));
 
         if ($this->GetSymconLocation() === null) {
             $this->InjectCaption($form['elements'], 'SortByDistance', $this->Translate('Nach Entfernung sortieren (Standort in Symcon unter Kern Instanzen → Location nicht gesetzt)'));
@@ -238,7 +251,7 @@ class Pegelstand extends IPSModuleStrict
 
     private function Refresh(bool $force): bool
     {
-        $uuid = $this->ReadPropertyString('StationUUID');
+        $uuid = $this->StationID();
         if ($uuid === '') {
             $this->SetStatus(104);
             return false;
@@ -611,9 +624,34 @@ class Pegelstand extends IPSModuleStrict
             $stations = $this->FetchStations() ?? [];
             if (count($stations) > 0) {
                 $this->WriteAttributeString('StationCache', json_encode($stations));
+                $this->WriteAttributeString('StationListError', '');
+            } else {
+                $this->WriteAttributeString('StationListError', $this->apiError !== '' ? $this->apiError : $this->Translate('leere Antwort'));
             }
         }
         return $stations;
+    }
+
+    /**
+     * Gewählte Station: aus der Liste, sonst die Direkteingabe (Name wie „KONSTANZ“ oder UUID).
+     */
+    private function StationID(): string
+    {
+        $uuid = $this->ReadPropertyString('StationUUID');
+        return $uuid !== '' ? $uuid : trim($this->ReadPropertyString('StationManual'));
+    }
+
+    private function InjectProperty(array &$elements, string $name, string $key, mixed $value): void
+    {
+        foreach ($elements as &$element) {
+            if (($element['name'] ?? '') === $name) {
+                $element[$key] = $value;
+            }
+            if (isset($element['items']) && is_array($element['items'])) {
+                $this->InjectProperty($element['items'], $name, $key, $value);
+            }
+        }
+        unset($element);
     }
 
     private function BuildStationOptions(string $filter): array
