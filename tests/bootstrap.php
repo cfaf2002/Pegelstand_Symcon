@@ -36,6 +36,7 @@ final class Sym
     public static array $fixtures = [];      // API-Pfad => Antwort
     public static array $requests = [];      // abgefragte API-Pfade
     public static array $objects = [];       // InstanzID => Modulobjekt
+    public static bool $visuRejectsTarget = false; // Visualisierung lehnt Sprungziel ab (Instanz nicht enthalten)
     public static array $translations = [];  // aktive Übersetzung (Standard: Deutsch wie in Symcon, leer = Englisch)
 
     public static function reset(): void
@@ -49,6 +50,7 @@ final class Sym
         self::$fixtures = [];
         self::$requests = [];
         self::$objects = [];
+        self::$visuRejectsTarget = false;
         // Wie eine deutsche Symcon-Installation: Übersetzung aus locale.json (de)
         self::$translations = json_decode((string) file_get_contents(__DIR__ . '/../Pegelstand/locale.json'), true)['translations']['de'];
     }
@@ -88,6 +90,22 @@ function IPS_GetObjectIDByIdent(string $ident, int $parent): int|false
     return $module !== null && $module->has($ident) ? $module->varId($ident) : false;
 }
 
+function IPS_GetInstanceList(): array
+{
+    return array_keys(Sym::$instances);
+}
+
+function IPS_GetInstance(int $id): array
+{
+    return ['InstanceID' => $id, 'ModuleInfo' => ['ModuleID' => Sym::$instances[$id]['module'] ?? '']];
+}
+
+function IPS_GetModule(string $moduleID): array
+{
+    $prefixes = ['visu' => 'VISU', 'webfront' => 'WFC', GUID_ARCHIVE => 'AC', GUID_LOCATION => 'LOC', GUID_PEGELSTAND => 'PEGEL'];
+    return ['ModuleID' => $moduleID, 'Prefix' => $prefixes[$moduleID] ?? ''];
+}
+
 function IPS_InstanceExists(int $id): bool
 {
     return isset(Sym::$instances[$id]);
@@ -100,7 +118,7 @@ function IPS_GetProperty(int $id, string $name): mixed
 
 function IPS_GetName(int $id): string
 {
-    return 'Instanz ' . $id;
+    return Sym::$instances[$id]['name'] ?? 'Instanz ' . $id;
 }
 
 function IPS_GetConfiguration(int $id): string
@@ -155,10 +173,10 @@ function AC_ReAggregateVariable(int $archive, int $variable): bool
 
 function VISU_PostNotification(int $id, string $title, string $text, string $type, int $target): int|false
 {
-    if (!isset(Sym::$instances[$id])) {
+    if (!isset(Sym::$instances[$id]) || (Sym::$visuRejectsTarget && $target !== 0)) {
         return false;
     }
-    Sym::$notifications[] = ['title' => $title, 'text' => $text, 'target' => $target];
+    Sym::$notifications[] = ['title' => $title, 'text' => $text, 'target' => $target, 'visu' => $id];
     return count(Sym::$notifications);
 }
 

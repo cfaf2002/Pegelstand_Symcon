@@ -988,13 +988,13 @@
     }
 
     #tile.theme-symcon:not(.st-low):not(.st-high):not(.st-warn):not(.st-nodata) {
-        --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 80%, #fff);
-        --w2: color-mix(in srgb, var(--accent-color, #3b9be0) 70%, #000);
+        --w1: color-mix(in srgb, color-mix(in srgb, var(--accent-color, #3b8fd6) 20%, #2f7fd0) 82%, #fff);
+        --w2: color-mix(in srgb, color-mix(in srgb, var(--accent-color, #3b8fd6) 20%, #2f7fd0) 62%, #061a33);
     }
 
     #tile.theme-symcon.st-low {
-        --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 50%, #fff);
-        --w2: var(--accent-color, #3b9be0);
+        --w1: color-mix(in srgb, color-mix(in srgb, var(--accent-color, #3b8fd6) 20%, #2f7fd0) 55%, #fff);
+        --w2: color-mix(in srgb, color-mix(in srgb, var(--accent-color, #3b8fd6) 20%, #2f7fd0) 85%, #0a2a4d);
     }
 
 
@@ -1002,10 +1002,10 @@
 
     /* helles Design: Wasser heller tönen, damit dunkle Schrift lesbar bleibt */
     #tile.sym-light:not(.st-low):not(.st-high):not(.st-warn):not(.st-nodata) {
-        --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 30%, #fff);
-        --w2: color-mix(in srgb, var(--accent-color, #3b9be0) 55%, #fff);
+        --w1: color-mix(in srgb, color-mix(in srgb, var(--accent-color, #3b8fd6) 20%, #2f7fd0) 32%, #fff);
+        --w2: color-mix(in srgb, color-mix(in srgb, var(--accent-color, #3b8fd6) 20%, #2f7fd0) 58%, #fff);
     }
-    #tile.sym-light.st-low  { --w1: color-mix(in srgb, var(--accent-color, #3b9be0) 18%, #fff); --w2: color-mix(in srgb, var(--accent-color, #3b9be0) 38%, #fff); }
+    #tile.sym-light.st-low  { --w1: color-mix(in srgb, color-mix(in srgb, var(--accent-color, #3b8fd6) 20%, #2f7fd0) 20%, #fff); --w2: color-mix(in srgb, color-mix(in srgb, var(--accent-color, #3b8fd6) 20%, #2f7fd0) 40%, #fff); }
     #tile.sym-light.st-high { --w1: #fbd9a4; --w2: #f3b25a; }
     #tile.sym-light.st-warn { --w1: #f9b9bb; --w2: #ee7b7f; }
     #tile.sym-light .wave { opacity: .9; }

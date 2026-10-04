@@ -225,6 +225,16 @@ class Pegelstand extends IPSModuleStrict
             $error
         ));
 
+        // Benachrichtigung: nur Kachel-Visualisierungen und WebFronts zur Auswahl anbieten
+        $visu = $this->VisualizationInstances();
+        if (count($visu['modules']) > 0) {
+            $this->InjectProperty($form['elements'], 'NotifyTarget', 'validModules', $visu['modules']);
+        }
+        if ($this->ReadPropertyInteger('NotifyTarget') === 0 && count($visu['VISU']) + count($visu['WFC']) > 0) {
+            $auto = $visu['VISU'][0] ?? $visu['WFC'][0];
+            $this->InjectProperty($form['elements'], 'NotifyTarget', 'caption', sprintf($this->Translate('Visualization (empty = automatically “%s”)'), IPS_GetName($auto)));
+        }
+
         if ($this->GetSymconLocation() === null) {
             $this->InjectCaption($form['elements'], 'SortByDistance', $this->Translate('Sort by distance (location not set in Symcon under Core Instances → Location)'));
         }

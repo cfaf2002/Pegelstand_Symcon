@@ -19,12 +19,19 @@ declare(strict_types=1);
 trait PegelNotifyTrait
 {
     /**
-     * Sendet eine Testnachricht an die eingestellte Visualisierung.
+     * Sendet eine Testnachricht an die eingestellte (oder automatisch gefundene) Visualisierung.
      */
     public function TestNotification(): bool
     {
+        $target = $this->NotifyTarget();
+        if ($target === 0) {
+            echo $this->Translate('No visualization found. Please select a tile visualization under “Visualization”.');
+            return false;
+        }
         $ok = $this->Notify($this->Translate('Water level'), $this->Translate('Test message from the water level module.'), true);
-        echo $ok ? $this->Translate('Test message sent.') : $this->Translate('Sending failed – check target instance, subscription and registered devices (see debug).');
+        echo $ok
+            ? sprintf($this->Translate('Test message sent to “%s”.'), IPS_GetName($target))
+            : sprintf($this->Translate('Sending to “%s” failed. Check the Symcon subscription and whether a device is registered for push messages in this visualization (see debug).'), IPS_GetName($target));
         return $ok;
     }
 
@@ -71,35 +78,81 @@ trait PegelNotifyTrait
         if (!$force && !$this->ReadPropertyBoolean('NotifyEnabled')) {
             return false;
         }
-        $target = $this->ReadPropertyInteger('NotifyTarget');
-        if ($target <= 0 || !IPS_InstanceExists($target)) {
-            $this->SendDebug('Benachrichtigung', 'Keine gültige Visualisierung ausgewählt.', 0);
+        $target = $this->NotifyTarget();
+        if ($target === 0) {
+            $this->SendDebug('Benachrichtigung', 'Keine Visualisierung ausgewählt oder gefunden.', 0);
             return false;
         }
 
         $title = mb_substr($title, 0, 32);
         $text = mb_substr($text, 0, 256);
+        $prefix = $this->ModulePrefix($target);
         $ok = false;
 
         try {
-            if (function_exists('VISU_PostNotification')) {
+            if ($prefix === 'VISU' && function_exists('VISU_PostNotification')) {
+                // Antippen öffnet die Instanz – das geht nur, wenn sie in der Visualisierung liegt.
+                // Sonst lehnt Symcon ab; dann ohne Sprungziel senden.
                 $ok = @VISU_PostNotification($target, $title, $text, 'Warning', $this->InstanceID) !== false;
+                if (!$ok) {
+                    $ok = @VISU_PostNotification($target, $title, $text, 'Warning', 0) !== false;
+                }
+            } elseif ($prefix === 'WFC' && function_exists('WFC_PushNotification')) {
+                $ok = @WFC_PushNotification($target, $title, $text, '', $this->InstanceID) !== false;
+                if (!$ok) {
+                    $ok = @WFC_PushNotification($target, $title, $text, '', 0) !== false;
+                }
+            } else {
+                $this->SendDebug('Benachrichtigung', 'Instanz ' . $target . ' ist keine Kachel-Visualisierung und kein WebFront (Präfix ' . $prefix . ').', 0);
             }
         } catch (Throwable $e) {
-            $this->SendDebug('Benachrichtigung', 'Kachel-Visualisierung: ' . $e->getMessage(), 0);
+            $this->SendDebug('Benachrichtigung', $e->getMessage(), 0);
         }
 
-        if (!$ok) {
-            try {
-                if (function_exists('WFC_PushNotification')) {
-                    $ok = @WFC_PushNotification($target, $title, $text, '', $this->InstanceID) !== false;
-                }
-            } catch (Throwable $e) {
-                $this->SendDebug('Benachrichtigung', 'WebFront: ' . $e->getMessage(), 0);
+        $this->SendDebug('Benachrichtigung', ($ok ? 'gesendet an ' : 'fehlgeschlagen an ') . $target . ': ' . $title . ' – ' . $text, 0);
+        return $ok;
+    }
+
+    /**
+     * Ziel der Nachricht: die ausgewählte Instanz, sonst automatisch die erste Kachel-Visualisierung
+     * (ersatzweise ein WebFront).
+     */
+    private function NotifyTarget(): int
+    {
+        $target = $this->ReadPropertyInteger('NotifyTarget');
+        if ($target > 0 && IPS_InstanceExists($target)) {
+            return $target;
+        }
+        $found = $this->VisualizationInstances();
+        return $found['VISU'][0] ?? $found['WFC'][0] ?? 0;
+    }
+
+    /**
+     * Alle Kachel-Visualisierungen (VISU) und WebFronts (WFC), erkannt am Funktionspräfix.
+     *
+     * @return array ['VISU' => [IDs], 'WFC' => [IDs], 'modules' => [Modul-GUIDs]]
+     */
+    private function VisualizationInstances(): array
+    {
+        $result = ['VISU' => [], 'WFC' => [], 'modules' => []];
+        foreach (IPS_GetInstanceList() as $id) {
+            $prefix = $this->ModulePrefix($id);
+            if ($prefix === 'VISU' || $prefix === 'WFC') {
+                $result[$prefix][] = $id;
+                $result['modules'][] = IPS_GetInstance($id)['ModuleInfo']['ModuleID'];
             }
         }
+        $result['modules'] = array_values(array_unique($result['modules']));
+        return $result;
+    }
 
-        $this->SendDebug('Benachrichtigung', ($ok ? 'gesendet: ' : 'fehlgeschlagen: ') . $title . ' – ' . $text, 0);
-        return $ok;
+    private function ModulePrefix(int $instanceID): string
+    {
+        try {
+            $module = IPS_GetModule(IPS_GetInstance($instanceID)['ModuleInfo']['ModuleID']);
+            return (string) ($module['Prefix'] ?? '');
+        } catch (Throwable $e) {
+            return '';
+        }
     }
 }

@@ -144,7 +144,7 @@ test('Fehler: Wiederholung nach 2, 5, 10 Min., Status erst beim dritten Mal', fu
 
 test('Hochwasserwarnung mit Hysterese und Benachrichtigungen', function () use ($now): void {
     Sym::reset();
-    Sym::$instances[777] = ['module' => 'visu', 'props' => []];
+    Sym::$instances[777] = ['module' => 'visu', 'props' => [], 'name' => 'Kachel-Visualisierung'];
     standardFixtures($now, 318.0);
     $p = pegel(['StationUUID' => 'uuid-k', 'ShowFloodWarning' => true, 'WarnLevel' => 330, 'NotifyEnabled' => true, 'NotifyTarget' => 777]);
     check($p->value('FloodWarning') === false, 'Bei 318 cm keine Warnung');
@@ -170,13 +170,38 @@ test('Hochwasserwarnung mit Hysterese und Benachrichtigungen', function () use (
     check(mb_strlen(Sym::$notifications[0]['title']) <= 32, 'Titel höchstens 32 Zeichen');
 });
 
-test('Testnachricht ohne Ziel schlägt sauber fehl', function () use ($now): void {
+test('Testnachricht ohne Visualisierung: klarer Hinweis', function () use ($now): void {
     standardFixtures($now);
     $p = pegel(['StationUUID' => 'uuid-k']);
     ob_start();
     $ok = $p->TestNotification();
     $out = (string) ob_get_clean();
-    check($ok === false && str_contains($out, 'fehlgeschlagen'), 'Fehlschlag mit Hinweis erwartet');
+    check($ok === false && str_contains($out, 'Keine Visualisierung gefunden'), 'Hinweis „Keine Visualisierung gefunden“ erwartet: ' . $out);
+});
+
+test('Testnachricht: Visualisierung automatisch, Sprungziel notfalls weglassen', function () use ($now): void {
+    standardFixtures($now);
+    Sym::$instances[888] = ['module' => 'visu', 'props' => [], 'name' => 'Kachel-Visualisierung'];
+    Sym::$visuRejectsTarget = true;
+    $p = pegel(['StationUUID' => 'uuid-k']);
+    ob_start();
+    $ok = $p->TestNotification();
+    $out = (string) ob_get_clean();
+    check($ok === true && str_contains($out, 'Kachel-Visualisierung'), 'Automatisch gefundene Visualisierung erwartet: ' . $out);
+    check((Sym::$notifications[0]['visu'] ?? 0) === 888 && Sym::$notifications[0]['target'] === 0, 'Zweiter Versuch ohne Sprungziel erwartet');
+
+    $form = json_decode($p->GetConfigurationForm(), true);
+    $field = null;
+    array_walk_recursive($form, static function () {});
+    foreach ($form['elements'] as $panel) {
+        foreach ($panel['items'] ?? [] as $e) {
+            if (($e['name'] ?? '') === 'NotifyTarget') {
+                $field = $e;
+            }
+        }
+    }
+    check(($field['validModules'] ?? []) === ['visu'], 'Auswahl nur auf Visualisierungen beschränkt');
+    check(str_contains($field['caption'] ?? '', 'automatisch „Kachel-Visualisierung“'), 'Hinweis auf automatische Auswahl erwartet: ' . ($field['caption'] ?? ''));
 });
 
 test('Archiv: Archivierung einschalten und 30 Tage nachladen', function () use ($now): void {
