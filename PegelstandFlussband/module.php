@@ -64,6 +64,7 @@ class PegelstandFlussband extends IPSModuleStrict
         }
 
         $this->SetTimerInterval('Update', max(5, $this->ReadPropertyInteger('Interval')) * 60 * 1000);
+        $this->SetStatus(102);
         if (IPS_GetKernelRunlevel() === KR_READY) {
             $this->Update();
         }
@@ -120,7 +121,8 @@ class PegelstandFlussband extends IPSModuleStrict
             $this->WriteAttributeInteger('FailCount', $fails);
             $this->SetTimerInterval('Update', [120, 300, 600][min($fails, 3) - 1] * 1000);
             $this->SendDebug('Fehler', 'PEGELONLINE nicht erreichbar (Versuch ' . $fails . ')', 0);
-            if ($fails >= 3) {
+            $hasData = count(json_decode($this->ReadAttributeString('TileData'), true)['stations'] ?? []) > 0;
+            if ($fails >= 3 || !$hasData) {
                 $this->SetStatus(201);
             }
             return false;

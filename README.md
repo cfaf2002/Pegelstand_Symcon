@@ -2,7 +2,7 @@
 
 [![IP-Symcon ab 8.2](https://img.shields.io/badge/IP--Symcon-ab_8.2-0b6fb3.svg)](https://www.symcon.de)
 [![Optimiert für Symcon 9.0](https://img.shields.io/badge/optimiert_f%C3%BCr-Symcon_9.0-0b6fb3.svg)](https://www.symcon.de/de/service/dokumentation/installation/migrationen/v81-v90-q1-2026/)
-![Modul-Version 1.5](https://img.shields.io/badge/Modul--Version-1.5-informational.svg)
+![Modul-Version 1.0](https://img.shields.io/badge/Modul--Version-1.0-informational.svg)
 [![Tests](https://github.com/cfaf2002/Pegelstand_Symcon/actions/workflows/tests.yml/badge.svg)](https://github.com/cfaf2002/Pegelstand_Symcon/actions/workflows/tests.yml)
 ![Sprachen: Deutsch, Englisch](https://img.shields.io/badge/Sprachen-Deutsch_%7C_Englisch-blueviolet.svg)
 ![PHP 8.5](https://img.shields.io/badge/PHP-8.5-777bb4.svg?logo=php&logoColor=white)
@@ -295,7 +295,13 @@ php tests/run.php
 
 Die Testsuite bildet die Symcon-Basisklasse nach und simuliert PEGELONLINE mit Beispieldaten. Sie prüft unter anderem den Abruf-Takt, das Überspringen ohne neue Messwerte, die Wiederholung bei Fehlern, Hysterese und Benachrichtigungen, das Nachladen ins Archiv ohne Dubletten, Einordnung und Prognose, Konfigurator mit Zwischenspeicher und Umkreis, das Flussband, die englische Übersetzung und ob jedes Formularfeld eine Eigenschaft hat. Mit `DEBUG=1` werden die Debug-Ausgaben der Module angezeigt.
 
-Bei jedem Push und Pull-Request prüft GitHub Actions (`.github/workflows/tests.yml`) mit PHP 8.3 und 8.5 die Syntax aller PHP-Dateien, alle JSON-Dateien und führt die Testsuite aus.
+Zusätzlich lädt `tests/stubs.php` die Bibliothek mit den offiziellen [Symcon-Stubs](https://github.com/symcon/SymconStubs) so, wie Symcon es tut, legt alle Instanzen an und öffnet die Formulare:
+
+```
+php tests/stubs.php <Pfad zu SymconStubs>
+```
+
+Bei jedem Push und Pull-Request prüft GitHub Actions (`.github/workflows/tests.yml`) mit PHP 8.3 und 8.5 die Syntax aller PHP-Dateien und alle JSON-Dateien, führt die Testsuite aus und macht den Ladetest mit den Symcon-Stubs.
 
 ## 9. Datenquelle
 
@@ -303,14 +309,9 @@ Daten: [PEGELONLINE](https://www.pegelonline.wsv.de/), Wasserstraßen- und Schif
 
 ## 10. Changelog
 
-| Version | Datum | Beschreibung |
-|---|---|---|
-| 1.5 | 03.10.2026 | Abruf im Takt der Station und Neuberechnung nur bei neuen Messwerten; Kachel-Update nur bei Änderung; Wiederholung bei Fehlern (2/5/10 Min.); Konfigurator mit Zwischenspeicher; Flussband-Tendenz sofort; Kacheln pausieren unsichtbar, Option „Animationen reduzieren“; Code in Bausteine aufgeteilt; englische Übersetzung; Testsuite mit GitHub-Workflow; Korrektur: Variablenprüfung unter IPSModuleStrict |
-| 1.4 | 03.10.2026 | Umstellung auf `IPSModuleStrict` und Darstellungen (ohne Profile), Farbschema „Symcon-Design“ als Standard, „Verlauf öffnen“ und „Öffnen“ über `openObject`, Lizenzköpfe in allen Dateien, neue Badges; Mindestversion Symcon 8.2 |
-| 1.3 | 03.10.2026 | Schiff (vor Anker über HSW), Sonne/Mond/Wolken, Hochzählen, Farbschemas, Pegel-Ring, eigenes Hintergrundbild; Einordnung in Worten und Prognose; neues Modul Flussband |
-| 1.2 | 03.10.2026 | Pegellatte, Tag/Nacht, Detailansicht, Strömung und Regen in der Kachel; Benachrichtigungen mit Hysterese; Archiv mit Nachladen; Sortierung nach Entfernung; Konfigurator mit Entfernung, Umkreis und aktuellem Pegel; Darstellungen ab Symcon 8 |
-| 1.1 | 03.10.2026 | Kachel für die Kachel-Visualisierung |
-| 1.0 | 03.10.2026 | Erste Version |
+| Version | Build | Datum | Beschreibung |
+|---|---|---|---|
+| 1.0 | 1 | 04.10.2026 | Erste Version |
 
 ## 11. Lizenz
 

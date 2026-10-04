@@ -163,6 +163,12 @@ class Pegelstand extends IPSModuleStrict
 
         $this->SetTimerInterval('Update', $this->IntervalSeconds() * 1000);
 
+        // Station gewählt: „Bitte Station wählen“ sofort durch „lädt“ ersetzen
+        $this->SetStatus(102);
+        if ($this->ReadAttributeInteger('LastMeasurement') === 0) {
+            $this->PushTile(['error' => $this->Translate('Wird geladen …')]);
+        }
+
         if (IPS_GetKernelRunlevel() === KR_READY) {
             $this->ApplyArchive();
             $this->Update();
@@ -446,7 +452,8 @@ class Pegelstand extends IPSModuleStrict
         $this->SendDebug('Fehler', $message . ' (Versuch ' . $fails . ', nächster in ' . ($retry / 60) . ' Min.)', 0);
         $this->SetTimerInterval('Update', $retry * 1000);
 
-        if ($fails >= 3 || $status === 202) {
+        // Ohne bisherige Daten den Fehler sofort zeigen, sonst erst ab dem dritten Fehlschlag
+        if ($fails >= 3 || $status === 202 || $this->ReadAttributeInteger('LastMeasurement') === 0) {
             $this->SetStatus($status);
             $this->PushTileError($message);
         }

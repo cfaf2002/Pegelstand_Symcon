@@ -38,3 +38,9 @@ jobs:
 
       - name: Tests ausführen
         run: php tests/run.php
+
+      - name: Offizielle Symcon-Stubs holen
+        run: git clone --depth 1 https://github.com/symcon/SymconStubs.git ../SymconStubs
+
+      - name: Ladetest mit den Symcon-Stubs
+        run: php tests/stubs.php ../SymconStubs
