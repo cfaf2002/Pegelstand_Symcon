@@ -30,6 +30,8 @@
         display: flex;
         flex-direction: column;
         padding: clamp(8px, 4cqmin, 16px);
+        /* Platz für die Kopfzeile der Symcon-Kachel (Instanzname, Vergrößern) */
+        padding-top: clamp(36px, 9cqmin, 44px);
         gap: clamp(4px, 2cqmin, 8px);
         color: var(--fg);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -72,6 +74,11 @@
         font: inherit;
         font-weight: 600;
         cursor: pointer;
+    }
+
+    /* Den Namen zeigt Symcon in der Kopfzeile – hier nur Gewässer und Abschnitt */
+    .title {
+        display: none !important;
     }
 
     .head {
@@ -370,6 +377,10 @@
             });
         }
 
+        function titleCase(s) {
+            return nice(s).replace(/(^|\s|-)\S/g, function (m) { return m.toUpperCase(); });
+        }
+
         function nice(s) {
             return (s || '').toLowerCase();
         }
@@ -414,7 +425,7 @@
             }
 
             var first = st[0], lastSt = st[st.length - 1];
-            $('sub').textContent = st.length + ' ' + T('stations') + (typeof first.km === 'number' && typeof lastSt.km === 'number'
+            $('sub').textContent = (d.water ? titleCase(d.water) + ' · ' : '') + st.length + ' ' + T('stations') + (typeof first.km === 'number' && typeof lastSt.km === 'number'
                 ? ' · km ' + nf0.format(first.km) + '–' + nf0.format(lastSt.km) : '');
 
             var html = '';

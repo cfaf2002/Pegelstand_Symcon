@@ -14,6 +14,7 @@
     }
 
     #tile {
+        --hdr: clamp(36px, 9cqmin, 44px);
         --sky1: #0e2233;
         --sky2: #173a52;
         --w1: #3b9be0;
@@ -305,14 +306,16 @@
         inset: 0;
         box-sizing: border-box;
         padding: 12px 14px;
-        padding: clamp(8px, 6cqmin, 20px) clamp(10px, 7cqmin, 24px) clamp(8px, 6cqmin, 20px) calc(var(--pad-left) + clamp(8px, 5cqmin, 20px));
+        padding: var(--hdr) clamp(10px, 7cqmin, 24px) clamp(8px, 6cqmin, 20px) calc(var(--pad-left) + clamp(8px, 5cqmin, 20px));
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         text-shadow: 0 1px 3px rgba(0, 0, 0, .45);
     }
 
+    /* Den Namen zeigt Symcon in der Kopfzeile der Kachel – hier nur das Gewässer */
     .station {
+        display: none;
         font-size: 14px;
         font-size: clamp(11px, 7cqmin, 20px);
         font-weight: 650;
@@ -434,6 +437,7 @@
         z-index: 10;
         box-sizing: border-box;
         padding: clamp(8px, 5cqmin, 18px);
+        padding-top: var(--hdr);
         display: flex;
         flex-direction: column;
         gap: clamp(4px, 2.5cqmin, 10px);
@@ -663,7 +667,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: 0;
+        top: var(--hdr);
         height: 55%;
         overflow: hidden;
         pointer-events: none;
@@ -777,7 +781,7 @@
     /* ---------- Pegel-Ring ---------- */
     .ring {
         position: absolute;
-        inset: 0;
+        inset: var(--hdr) 0 0 0;
         display: none;
         align-items: center;
         justify-content: center;
@@ -788,8 +792,8 @@
     #tile.layout-ring .staff, #tile.layout-ring .content, #tile.layout-ring .rain { display: none; }
 
     .ring svg {
-        width: 88cqmin;
-        height: 88cqmin;
+        width: min(88cqw, calc(100cqh - var(--hdr)) * 0.92);
+        height: min(88cqw, calc(100cqh - var(--hdr)) * 0.92);
         overflow: visible;
     }
 
@@ -1307,7 +1311,7 @@
             var y = 88 - frac * 76;
             $('rwater').style.transform = 'translate(-20px,' + y.toFixed(1) + 'px)';
 
-            $('rname').textContent = (d.station || '').toLowerCase().replace(/(^|\s|-)\S/g, function (m) { return m.toUpperCase(); }).slice(0, 16);
+            $('rname').textContent = '';
             $('rtrend').textContent = d.trend > 0 ? '↗' : (d.trend < 0 ? '↘' : (typeof d.trend === 'number' ? '→' : ''));
         }
 
@@ -1361,7 +1365,7 @@
             for (var m = start; m <= topV; m += step) {
                 var p = scale.raw(m);
                 if (p > 4 && p < 96) {
-                    html += '<span class="lbl" style="bottom:' + p.toFixed(2) + '%">' + nf0.format(m) + '</span>';
+                    html += '<span class="lbl" style="bottom:' + p.toFixed(2) + '%">' + nf0.format(Math.round(m) || 0) + '</span>';
                 }
             }
             if (typeof d.level === 'number') {
