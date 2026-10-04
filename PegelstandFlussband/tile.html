@@ -351,6 +351,13 @@
         }
 
         // Dunkle Schriftfarbe der Visualisierung = helles Design
+        // Texte aus PEGELONLINE nie ungefiltert als HTML einsetzen
+        function esc(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
         function isDarkText(el) {
             var m = getComputedStyle(el).color.match(/\d+(\.\d+)?/g);
             if (!m || m.length < 3) return false;
@@ -387,7 +394,7 @@
         }
 
         function describe(s) {
-            var parts = ['<b>' + nice(s.name).replace(/(^|\s|-)\S/g, function (m) { return m.toUpperCase(); }) + '</b>'];
+            var parts = ['<b>' + esc(nice(s.name).replace(/(^|\s|-)\S/g, function (m) { return m.toUpperCase(); })) + '</b>'];
             if (typeof s.km === 'number') parts.push('km ' + nf1.format(s.km));
             parts.push(nf0.format(s.level) + ' cm');
             var c = s.cvs || {};
@@ -401,7 +408,7 @@
             var html = '<span class="txt">' + parts.join(' · ') + '</span>';
             // Symcon 8.2+: angelegte Pegelstand-Instanz direkt öffnen
             if (s.open && typeof window.openObject === 'function') {
-                html += '<button class="open" data-open="' + s.open + '">' + T('Open') + ' ↗</button>';
+                html += '<button class="open" data-open="' + (parseInt(s.open, 10) || 0) + '">' + esc(T('Open')) + ' ↗</button>';
             }
             return html;
         }
@@ -420,7 +427,7 @@
             var st = Array.isArray(d.stations) ? d.stations : [];
             if (st.length === 0) {
                 $('sub').textContent = '';
-                $('chart').innerHTML = '<div class="empty">' + (d.error || T('No data')) + '</div>';
+                $('chart').innerHTML = '<div class="empty">' + esc(d.error || T('No data')) + '</div>';
                 $('names').innerHTML = '';
                 return;
             }
@@ -469,7 +476,7 @@
 
             var names = $('names');
             names.className = 'names' + ($('chart').clientWidth / st.length < 56 ? ' rot' : '');
-            names.innerHTML = st.map(function (s) { return '<span>' + nice(s.name) + '</span>'; }).join('');
+            names.innerHTML = st.map(function (s) { return '<span>' + esc(nice(s.name)) + '</span>'; }).join('');
 
             $('upd').textContent = d.updated ? new Date(d.updated * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + clockSuffix() : '';
             $('info').innerHTML = selected >= 0 && st[selected] ? describe(st[selected]) : T('Tap a column for details');

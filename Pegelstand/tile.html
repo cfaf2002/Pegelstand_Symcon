@@ -1293,6 +1293,13 @@
             });
         }
 
+        // Texte aus PEGELONLINE nie ungefiltert als HTML einsetzen
+        function esc(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
         function fmtLevel(v) {
             return Math.abs(v - Math.round(v)) < 0.05 ? nf0.format(v) : nf1.format(v);
         }
@@ -1511,7 +1518,7 @@
         }
 
         // ---------- Fischschwarm (Canvas) ----------
-        var fish = { on: false, raf: 0, list: [], t: 0, last: 0 };
+        var fish = { on: false, raf: 0, list: [], t: 0, last: 0, color: 'rgba(0, 38, 60, .3)' };
 
         function initFish() {
             fish.list = [];
@@ -1532,7 +1539,9 @@
             var c = $('fish');
             if (!fish.on || !c) return;
             fish.raf = requestAnimationFrame(drawFish);
-            var dt = fish.last ? Math.min(0.05, (ts - fish.last) / 1000) : 0.016;
+            // 30 Bilder pro Sekunde reichen für ruhige Fische und schonen Wandtablets
+            if (fish.last && ts - fish.last < 32) return;
+            var dt = fish.last ? Math.min(0.08, (ts - fish.last) / 1000) : 0.033;
             fish.last = ts;
             fish.t += dt;
 
@@ -1552,7 +1561,7 @@
             var cx = 0.5 + 0.36 * Math.sin(t * 0.09) + 0.06 * Math.sin(t * 0.31);
             var cy = 0.55 + 0.14 * Math.sin(t * 0.13 + 1.3);
             var scale = Math.max(0.6, Math.min(1.4, Math.min(w, h * 2) / 360));
-            var dark = getComputedStyle($('tile')).getPropertyValue('--fish').trim() || 'rgba(0, 35, 55, .32)';
+            var dark = fish.color;
 
             fish.list.forEach(function (f, i) {
                 var tx = cx + f.ox * (1 + 0.3 * Math.sin(t * 0.5 + i));
@@ -1779,7 +1788,7 @@
             Object.keys(refs).forEach(function (k) {
                 if (refs[k] >= lo && refs[k] <= hi) {
                     svg += '<line class="refline' + (k === 'Warnung' ? ' warn' : '') + '" x1="0" x2="100" y1="' + y(refs[k]).toFixed(2) + '" y2="' + y(refs[k]).toFixed(2) + '"/>';
-                    labels += '<span class="d-r" style="bottom:' + (100 - y(refs[k])).toFixed(2) + '%">' + k + '</span>';
+                    labels += '<span class="d-r" style="bottom:' + (100 - y(refs[k])).toFixed(2) + '%">' + esc(k) + '</span>';
                 }
             });
             svg += '<polygon class="area" points="0,100 ' + pts + ' 100,100"/>';
@@ -1801,7 +1810,7 @@
             var effects = d.effects !== false;
 
             $('station').textContent = d.station ? d.station.toLowerCase() : T('Water level');
-            $('waterbody').innerHTML = d.water ? d.water.toLowerCase() : '&nbsp;';
+            $('waterbody').textContent = d.water ? d.water.toLowerCase() : '\u00a0';
             if (hasLevel) {
                 countTo(d.level, $('level'), $('rval'));
             } else {
@@ -1825,7 +1834,7 @@
             }
             keys.forEach(function (k) {
                 var p = scale.pct(refs[k]);
-                refHtml += '<div class="ref' + (k === 'Warnung' ? ' warnline' : '') + '" style="bottom:' + p.toFixed(2) + '%"><span class="' + (below[k] ? 'l' : '') + '">' + k + ' ' + fmtLevel(refs[k]) + '</span></div>';
+                refHtml += '<div class="ref' + (k === 'Warnung' ? ' warnline' : '') + '" style="bottom:' + p.toFixed(2) + '%"><span class="' + (below[k] ? 'l' : '') + '">' + esc(k) + ' ' + fmtLevel(Number(refs[k])) + '</span></div>';
             });
             $('refs').innerHTML = refHtml;
 
@@ -1917,6 +1926,7 @@
                 tile.classList.add('sym-light');
             }
             $('bgdim').style.opacity = ((d.bgDim || 0) / 100).toFixed(2);
+            fish.color = getComputedStyle(tile).getPropertyValue('--fish').trim() || fish.color;
             setFish(fishOn && !paused && classes.indexOf('layout-ring') < 0);
 
             if ($('detail').classList.contains('open')) {

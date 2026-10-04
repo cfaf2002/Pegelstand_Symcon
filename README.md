@@ -25,10 +25,11 @@ Autor: Armin Frohwerk · Lizenz: MIT
    - [Instanz „Pegelstand Flussband“](#instanz-pegelstand-flussband)
 6. [Variablen und Darstellungen](#6-variablen-und-darstellungen)
 7. [PHP-Befehle](#7-php-befehle)
-8. [Entwicklung und Tests](#8-entwicklung-und-tests)
-9. [Datenquelle](#9-datenquelle)
-10. [Changelog](#10-changelog)
-11. [Lizenz](#11-lizenz)
+8. [Sicherheit und Leistung](#8-sicherheit-und-leistung)
+9. [Entwicklung und Tests](#9-entwicklung-und-tests)
+10. [Datenquelle](#10-datenquelle)
+11. [Changelog](#11-changelog)
+12. [Lizenz](#12-lizenz)
 
 ## 1. Funktionsumfang
 
@@ -271,7 +272,21 @@ PEGELFB_Update(int $InstanzID): bool
 
 Aktualisiert das Flussband sofort.
 
-## 8. Entwicklung und Tests
+## 8. Sicherheit und Leistung
+
+**Sicherheit**
+- Abrufe nur über HTTPS mit Zertifikatsprüfung, höchstens 3 Weiterleitungen (ebenfalls nur HTTPS), Zeitlimits und eine Größengrenze für Antworten.
+- Stations- und Gewässernamen aus PEGELONLINE werden in den Kacheln nie als HTML eingesetzt, sondern immer maskiert – auch präparierte Namen können keinen Code in die Visualisierung schleusen.
+- Eingaben (Station, Gewässer) werden für die Abfrage-URL kodiert.
+- Hintergrundbilder über 40 Megapixel werden nicht dekodiert (Schutz vor Speicherüberlauf).
+- Keine Zugangsdaten nötig, keine Daten verlassen Symcon außer den Abrufen bei PEGELONLINE.
+
+**Leistung**
+- Abruf im Takt der Station; ohne neuen Messwert wird nichts neu berechnet und nichts an die Kachel geschickt.
+- Konfigurator und Stationsliste werden zwischengespeichert, das verkleinerte Hintergrundbild ebenfalls (neu nur bei geändertem Medienobjekt).
+- Kachel-Animationen halten an, sobald die Kachel nicht zu sehen ist; der Fischschwarm zeichnet höchstens 30 Bilder pro Sekunde.
+
+## 9. Entwicklung und Tests
 
 Aufbau des Repositorys:
 
@@ -304,17 +319,17 @@ php tests/stubs.php <Pfad zu SymconStubs>
 
 Bei jedem Push und Pull-Request prüft GitHub Actions (`.github/workflows/tests.yml`) mit PHP 8.3 und 8.5 die Syntax aller PHP-Dateien und alle JSON-Dateien, führt die Testsuite aus und macht den Ladetest mit den Symcon-Stubs.
 
-## 9. Datenquelle
+## 10. Datenquelle
 
 Daten: [PEGELONLINE](https://www.pegelonline.wsv.de/), Wasserstraßen- und Schifffahrtsverwaltung des Bundes (WSV). Die Rohdaten sind ungeprüft.
 
-## 10. Changelog
+## 11. Changelog
 
 | Version | Build | Datum | Beschreibung |
 |---|---|---|---|
 | 1.0 | 1 | 04.10.2026 | Erste Version |
 
-## 11. Lizenz
+## 12. Lizenz
 
 Dieses Modul steht unter der **MIT-Lizenz** (siehe Datei [`LICENSE`](LICENSE)).
 

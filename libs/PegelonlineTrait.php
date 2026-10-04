@@ -45,6 +45,15 @@ trait PegelonlineTrait
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_MAXREDIRS      => 3,
+            // nur HTTPS, auch bei Weiterleitungen; Zertifikat wird immer geprüft
+            CURLOPT_PROTOCOLS      => CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            // Schutz vor unerwartet großen Antworten (größte reguläre Antwort: Stationsliste, ca. 1 MB)
+            CURLOPT_MAXFILESIZE    => 20 * 1024 * 1024,
+            CURLOPT_ENCODING       => '',
             CURLOPT_CONNECTTIMEOUT => 10,
             CURLOPT_TIMEOUT        => 30,
             CURLOPT_HTTPHEADER     => ['Accept: application/json'],

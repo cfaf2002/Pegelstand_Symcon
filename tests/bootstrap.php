@@ -33,6 +33,7 @@ final class Sym
     public static array $instances = [];     // InstanzID => ['module' => GUID, 'props' => [...]]
     public static ?array $location = [50.73, 7.10];
     public static array $media = [];         // MedienID => Rohdaten
+    public static int $mediaReads = 0;       // wie oft Medieninhalt gelesen wurde
     public static array $fixtures = [];      // API-Pfad => Antwort
     public static array $requests = [];      // abgefragte API-Pfade
     public static array $objects = [];       // InstanzID => Modulobjekt
@@ -47,6 +48,7 @@ final class Sym
         self::$instances = [900 => ['module' => GUID_ARCHIVE, 'props' => []], 901 => ['module' => GUID_LOCATION, 'props' => []]];
         self::$location = [50.73, 7.10];
         self::$media = [];
+        self::$mediaReads = 0;
         self::$fixtures = [];
         self::$requests = [];
         self::$objects = [];
@@ -141,7 +143,13 @@ function IPS_MediaExists(int $id): bool
 
 function IPS_GetMediaContent(int $id): string
 {
+    Sym::$mediaReads++;
     return base64_encode(Sym::$media[$id]);
+}
+
+function IPS_GetMedia(int $id): array
+{
+    return ['MediaID' => $id, 'MediaUpdated' => 1000, 'MediaSize' => strlen(Sym::$media[$id] ?? '')];
 }
 
 function AC_GetLoggingStatus(int $archive, int $variable): bool
@@ -282,6 +290,9 @@ class IPSModuleStrict
     protected function UpdateVisualizationValue(string $value): void { $this->visualizationUpdates[] = $value; }
     protected function UpdateFormField(string $field, string $param, mixed $value): void { $this->formUpdates[] = [$field, $param, $value]; }
     protected function ReloadForm(): void { }
+    public array $buffers = [];
+    protected function GetBuffer(string $name): string { return $this->buffers[$name] ?? ''; }
+    protected function SetBuffer(string $name, string $data): bool { $this->buffers[$name] = $data; return true; }
     protected function Translate(string $text): string { return Sym::$translations[$text] ?? $text; }
 
     // Hilfen für Tests

@@ -265,6 +265,19 @@ test('Eigenes Hintergrundbild wird verkleinert eingebettet', function () use ($n
     $html = $p->GetVisualizationTile();
     check(str_contains($html, 'data:image\/jpeg;base64,'), 'Bild muss als data-URI eingebettet sein');
     check(strlen($html) < 400000, 'Kachel muss unter 400 KB bleiben');
+    $reads = Sym::$mediaReads;
+    $p->GetVisualizationTile();
+    check(Sym::$mediaReads === $reads, 'Zweiter Aufruf muss das verkleinerte Bild aus dem Zwischenspeicher nehmen');
+});
+
+test('Riesiges Hintergrundbild wird nicht dekodiert', function () use ($now): void {
+    // PNG-Kopf mit 20000 × 20000 Pixeln (400 Megapixel), ohne echten Inhalt
+    $png = "\x89PNG\r\n\x1a\n" . "\0\0\0\x0dIHDR" . pack('NN', 20000, 20000) . "\x08\x02\0\0\0" . "\0\0\0\0";
+    Sym::$media[556] = $png;
+    standardFixtures($now);
+    $p = pegel(['StationUUID' => 'uuid-k', 'TileBackground' => 556]);
+    $html = $p->GetVisualizationTile();
+    check(!str_contains($html, 'base64,'), 'Zu großes Bild darf nicht eingebettet werden');
 });
 
 test('Stationsauswahl nach Entfernung sortiert', function () use ($now): void {

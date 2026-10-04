@@ -60,8 +60,29 @@ trait PegelTileTrait
         if ($mediaID <= 0 || !IPS_MediaExists($mediaID)) {
             return null;
         }
+        // Fertig verkleinertes Bild zwischenspeichern – neu nur, wenn das Medienobjekt sich ändert
+        $media = IPS_GetMedia($mediaID);
+        $key = $mediaID . ':' . ($media['MediaUpdated'] ?? 0) . ':' . ($media['MediaSize'] ?? 0);
+        $cached = json_decode($this->GetBuffer('TileBackground'), true);
+        if (is_array($cached) && ($cached['key'] ?? '') === $key) {
+            return $cached['uri'];
+        }
+        $uri = $this->BuildBackgroundUri($mediaID);
+        $this->SetBuffer('TileBackground', (string) json_encode(['key' => $key, 'uri' => $uri]));
+        return $uri;
+    }
+
+    private function BuildBackgroundUri(int $mediaID): ?string
+    {
         $raw = base64_decode((string) IPS_GetMediaContent($mediaID), true);
         if ($raw === false || $raw === '') {
+            return null;
+        }
+
+        // Riesige Bilder nicht dekodieren (Speicherschutz): höchstens 40 Megapixel
+        $info = @getimagesizefromstring($raw);
+        if ($info === false || $info[0] * $info[1] > 40000000) {
+            $this->SendDebug('Hintergrund', 'Bild unbekannt oder zu groß (max. 40 Megapixel).', 0);
             return null;
         }
 
