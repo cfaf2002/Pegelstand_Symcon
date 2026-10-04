@@ -39,6 +39,11 @@
             "caption": "Hide lock upper gauges (OP) – they are dam-controlled and show no wave"
         },
         {
+            "type": "CheckBox",
+            "name": "HideNoReference",
+            "caption": "Hide stations without reference values (e.g. tidal gauges) – they cannot be placed in the band"
+        },
+        {
             "type": "NumberSpinner",
             "name": "Interval",
             "caption": "Query interval",

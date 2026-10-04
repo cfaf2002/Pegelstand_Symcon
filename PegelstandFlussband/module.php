@@ -32,6 +32,7 @@ class PegelstandFlussband extends IPSModuleStrict
         $this->RegisterPropertyFloat('KmTo', 0.0);
         $this->RegisterPropertyInteger('MaxStations', 12);
         $this->RegisterPropertyBoolean('HideLockUpper', true);
+        $this->RegisterPropertyBoolean('HideNoReference', true);
         $this->RegisterPropertyInteger('Interval', 15);
         $this->RegisterPropertyInteger('TileTheme', 2);
         $this->RegisterPropertyBoolean('TileReduceMotion', false);
@@ -163,6 +164,10 @@ class PegelstandFlussband extends IPSModuleStrict
                 if (in_array($short, ['MNW', 'MW', 'MHW', 'HSW'], true) && isset($cv['value'])) {
                     $cvs[$short] = (float) $cv['value'];
                 }
+            }
+            // Ohne Kennwerte (z. B. Tidepegel) lässt sich die Station nicht einordnen
+            if ($this->ReadPropertyBoolean('HideNoReference') && count($cvs) === 0) {
+                continue;
             }
             $t = strtotime((string) ($w['currentMeasurement']['timestamp'] ?? ''));
             $rows[] = [

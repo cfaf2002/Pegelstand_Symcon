@@ -47,6 +47,7 @@
             "Gauging station not found": "Messstation nicht gefunden",
             "Gauging stations (PEGELONLINE)": "Messstationen (PEGELONLINE)",
             "Hide lock upper gauges (OP) – they are dam-controlled and show no wave": "Schleusen-Oberpegel (OP) ausblenden – sie sind staugeregelt und zeigen keine Welle",
+            "Hide stations without reference values (e.g. tidal gauges) – they cannot be placed in the band": "Stationen ohne Kennwerte ausblenden (z. B. Tidepegel) – sie lassen sich im Band nicht einordnen",
             "Hysteresis for the all clear": "Hysterese für die Entwarnung",
             "Layout": "Darstellung",
             "Light": "Hell",

@@ -381,6 +381,17 @@ test('Flussband: Schleusen-OP aus, relative Lage, Tendenz sofort, Öffnen', func
     check($f->value('AboveMHW') === 0, 'Keine Station über MHW erwartet');
 });
 
+test('Flussband: Stationen ohne Kennwerte nur auf Wunsch', function () use ($now): void {
+    moselFixtures($now);
+    $f = flussband(['Water' => 'MOSEL', 'HideLockUpper' => false]);
+    $names = array_column(tileData($f)['stations'] ?? [], 'name');
+    check(!in_array('KOBLENZ OP', $names, true), 'Ohne Kennwerte standardmäßig ausgeblendet');
+    $f->prop('HideNoReference', false);
+    $f->Update();
+    $names = array_column(tileData($f)['stations'] ?? [], 'name');
+    check(in_array('KOBLENZ OP', $names, true), 'Mit abgeschaltetem Filter sichtbar');
+});
+
 test('Flussband: Auswahl auf Höchstzahl und Wiederholung bei Fehler', function () use ($now): void {
     moselFixtures($now);
     $f = flussband(['Water' => 'MOSEL', 'MaxStations' => 3]);

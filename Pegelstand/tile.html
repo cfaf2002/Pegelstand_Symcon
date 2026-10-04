@@ -14,7 +14,7 @@
     }
 
     #tile {
-        --hdr: clamp(36px, 9cqmin, 44px);
+        --hdr: clamp(46px, 11cqmin, 54px);
         --sky1: #0e2233;
         --sky2: #173a52;
         --w1: #3b9be0;
@@ -1077,6 +1077,11 @@
 
     #tile.calm .wave.front, #tile.calm .wave.back {
         animation-duration: 40s !important;
+    }
+
+    /* niedrige Kacheln (z. B. Handy): Einordnungstext weglassen, damit nichts übers Wasser läuft */
+    @container (max-height: 240px) {
+        .insight { display: none; }
     }
 
     /* sehr flache Kacheln: Nebeninfos ausblenden */
