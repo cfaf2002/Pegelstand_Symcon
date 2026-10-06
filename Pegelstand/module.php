@@ -809,8 +809,9 @@ class Pegelstand extends IPSModuleStrict
                     'PRESENTATION' => $value,
                     'ICON'         => 'triangle-exclamation',
                     'OPTIONS'      => json_encode([
-                        ['Value' => false, 'Caption' => $this->Translate('none'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0x00AA00],
-                        ['Value' => true, 'Caption' => $this->Translate('Flood'), 'IconActive' => false, 'IconValue' => '', 'Color' => 0xFF0000],
+                        // Wertanzeige: jede Option braucht ColorActive/ColorValue, sonst zeigt die Symcon-App „Invalid Configuration“
+                        ['Value' => false, 'Caption' => $this->Translate('none'), 'IconActive' => false, 'IconValue' => '', 'ColorActive' => true, 'ColorValue' => 0x34B36B],
+                        ['Value' => true, 'Caption' => $this->Translate('Flood'), 'IconActive' => false, 'IconValue' => '', 'ColorActive' => true, 'ColorValue' => 0xE5484D],
                     ]),
                 ];
         }
