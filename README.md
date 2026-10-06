@@ -1,13 +1,15 @@
-# Pegelstand
+# Pegelstand für IP-Symcon
 
 [![IP-Symcon ab 8.2](https://img.shields.io/badge/IP--Symcon-ab_8.2-0b6fb3.svg)](https://www.symcon.de)
 [![Optimiert für Symcon 9.0](https://img.shields.io/badge/optimiert_f%C3%BCr-Symcon_9.0-0b6fb3.svg)](https://www.symcon.de/de/service/dokumentation/installation/migrationen/v81-v90-q1-2026/)
-![Modul-Version 1.0](https://img.shields.io/badge/Modul--Version-1.0-informational.svg)
+[![Modul-Version 1.1 (Build 2)](https://img.shields.io/badge/Modul--Version-1.1_(Build_2)-informational.svg)](library.json)
 [![Tests](https://github.com/cfaf2002/Pegelstand_Symcon/actions/workflows/tests.yml/badge.svg)](https://github.com/cfaf2002/Pegelstand_Symcon/actions/workflows/tests.yml)
-![Sprachen: Deutsch, Englisch](https://img.shields.io/badge/Sprachen-Deutsch_%7C_Englisch-blueviolet.svg)
-![PHP 8.5](https://img.shields.io/badge/PHP-8.5-777bb4.svg?logo=php&logoColor=white)
+[![PHP 8.3 und 8.5](https://img.shields.io/badge/PHP-8.3_%7C_8.5-777bb4.svg?logo=php&logoColor=white)](https://www.php.net)
 [![SDK: IPSModuleStrict](https://img.shields.io/badge/SDK-IPSModuleStrict-success.svg)](https://www.symcon.de/de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/module/)
+[![Variablen: Darstellungen](https://img.shields.io/badge/Variablen-Darstellungen-success.svg)](https://www.symcon.de/de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/darstellungen/)
 [![Kachel-Visualisierung: HTML-SDK](https://img.shields.io/badge/Kachel--Visualisierung-HTML--SDK-orange.svg)](https://www.symcon.de/de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/html-sdk/)
+[![Farbschema: Symcon-Design, Dunkel, Hell](https://img.shields.io/badge/Farbschema-Symcon--Design_%7C_Dunkel_%7C_Hell-blueviolet.svg)](STYLEGUIDE.md)
+![Sprache: Deutsch | Englisch](https://img.shields.io/badge/Sprachen-Deutsch_%7C_Englisch-blueviolet.svg)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-green.svg)](LICENSE)
 [![Daten: DL-DE Zero 2.0](https://img.shields.io/badge/Daten-DL--DE%E2%86%92Zero--2.0-lightgrey.svg)](https://www.govdata.de/dl-de/zero-2-0)
 
@@ -331,6 +333,7 @@ Daten: [PEGELONLINE](https://www.pegelonline.wsv.de/), Wasserstraßen- und Schif
 
 | Version | Build | Datum | Beschreibung |
 |---|---|---|---|
+| 1.1 | 2 | 06.10.2026 | Einheitliches Design nach `STYLEGUIDE.md`: Kachel-Grundlage (Farben, Schrift, Radien, Zustandsfarben) und Einstellung „Farbschema der Kachel“ (Symcon-Design, Dunkel, Hell); Kachel-Datei heißt `tile.html`; einheitliche Badges; gemeinsamer Test-Workflow mit Struktur- und Ladetest; Kachel-Grundlage ergänzt; Reihenfolge der Farbschemas: Symcon-Design, Dunkel, Hell, Natur |
 | 1.0 | 1 | 04.10.2026 | Erste Version |
 
 ## 12. Lizenz

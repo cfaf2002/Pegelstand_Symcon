@@ -1,4 +1,4 @@
-# Prüft das Modul bei jedem Push und Pull-Request.
+# Prüft das Modul bei jedem Push und Pull-Request (Hausstil, in allen Repositorys gleich).
 # SPDX-License-Identifier: MIT
 name: Tests
 
@@ -24,23 +24,39 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: curl, gd, mbstring, fileinfo
+          extensions: curl, gd, mbstring, fileinfo, sodium
+          tools: phpunit:10
           coverage: none
 
       - name: PHP-Syntax prüfen
-        run: find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
+        run: find . -name '*.php' -not -path './.git/*' -not -path './tests/stubs/*' -print0 | xargs -0 -n1 php -l
 
       - name: JSON-Dateien prüfen
         run: |
           for f in library.json */module.json */form.json */locale.json; do
+            [ -f "$f" ] || continue
             php -r 'json_decode(file_get_contents($argv[1]), flags: JSON_THROW_ON_ERROR);' "$f" || { echo "Ungültig: $f"; exit 1; }
           done
 
+      - name: Strukturprüfung (Hausstil)
+        run: php tests/structure.php
+
       - name: Tests ausführen
+        if: hashFiles('tests/run.php') != ''
         run: php tests/run.php
 
       - name: Offizielle Symcon-Stubs holen
+        if: hashFiles('tests/stubs.php') != ''
         run: git clone --depth 1 https://github.com/symcon/SymconStubs.git ../SymconStubs
 
       - name: Ladetest mit den Symcon-Stubs
+        if: hashFiles('tests/stubs.php') != ''
         run: php tests/stubs.php ../SymconStubs
+
+      - name: Symcon-Stubs für PHPUnit holen
+        if: hashFiles('phpunit.xml') != ''
+        run: git clone --depth 1 https://github.com/symcon/SymconStubs.git tests/stubs
+
+      - name: PHPUnit
+        if: hashFiles('phpunit.xml') != ''
+        run: phpunit --configuration phpunit.xml

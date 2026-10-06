@@ -210,16 +210,16 @@
                             "value": 3
                         },
                         {
-                            "caption": "Nature – sky by time of day",
-                            "value": 0
-                        },
-                        {
                             "caption": "Dark",
                             "value": 1
                         },
                         {
                             "caption": "Light",
                             "value": 2
+                        },
+                        {
+                            "caption": "Nature – sky by time of day",
+                            "value": 0
                         }
                     ]
                 },
