@@ -3,10 +3,7 @@
     "name": "Pegelstand Konfigurator",
     "type": 4,
     "vendor": "PEGELONLINE (WSV)",
-    "aliases": [
-        "Pegelstand Konfigurator",
-        "Pegelstationen"
-    ],
+    "aliases": [],
     "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],

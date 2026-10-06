@@ -3,11 +3,7 @@
     "name": "Pegelstand",
     "type": 3,
     "vendor": "PEGELONLINE (WSV)",
-    "aliases": [
-        "Pegelstand",
-        "Wasserstand",
-        "Pegelstandsanzeige"
-    ],
+    "aliases": [],
     "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],

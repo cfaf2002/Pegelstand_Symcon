@@ -3,11 +3,7 @@
     "name": "Pegelstand Flussband",
     "type": 3,
     "vendor": "PEGELONLINE (WSV)",
-    "aliases": [
-        "Pegelstand Flussband",
-        "Flussband",
-        "Hochwasserwelle"
-    ],
+    "aliases": [],
     "parentRequirements": [],
     "childRequirements": [],
     "implemented": [],
