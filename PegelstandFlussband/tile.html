@@ -383,6 +383,8 @@
         color: var(--muted);
     }
 
+    .foot .err { color: var(--bad); }
+
     .empty {
         flex: 1;
         display: flex;
@@ -586,7 +588,10 @@
             names.className = 'names' + ($('chart').clientWidth / st.length < 56 ? ' rot' : '');
             names.innerHTML = st.map(function (s) { return '<span>' + esc(nice(s.name)) + '</span>'; }).join('');
 
-            $('upd').textContent = d.updated ? new Date(d.updated * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + clockSuffix() : '';
+            var stamp = d.updated ? new Date(d.updated * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + clockSuffix() : '';
+            // Abruffehler: letzte Werte bleiben stehen, der Hinweis steht beim Zeitpunkt
+            $('upd').textContent = d.error ? d.error + (stamp ? ' · ' + stamp : '') : stamp;
+            $('upd').classList.toggle('err', !!d.error);
             $('info').innerHTML = selected >= 0 && st[selected] ? describe(st[selected]) : T('Tap a column for details');
         }
 

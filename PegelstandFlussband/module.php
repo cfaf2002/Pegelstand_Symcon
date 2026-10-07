@@ -104,7 +104,7 @@ class PegelstandFlussband extends IPSModuleStrict
     public function GetVisualizationTile(): string
     {
         $html = file_get_contents(__DIR__ . '/tile.html');
-        return str_replace('/*INITIAL_DATA*/null', json_encode($this->ReadAttributeString('TileData')), $html);
+        return str_replace('/*INITIAL_DATA*/null', (string) json_encode($this->ReadAttributeString('TileData'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT), $html);
     }
 
     public function Update(): bool
@@ -125,6 +125,10 @@ class PegelstandFlussband extends IPSModuleStrict
             $hasData = count(json_decode($this->ReadAttributeString('TileData'), true)['stations'] ?? []) > 0;
             if ($fails >= 3 || !$hasData) {
                 $this->SetStatus(201);
+                // Fehler auch in der Kachel zeigen; die letzten Werte bleiben stehen
+                $tile = json_decode($this->ReadAttributeString('TileData'), true) ?: [];
+                $tile['error'] = $this->Translate('PEGELONLINE not reachable');
+                $this->PushTile($tile);
             }
             return false;
         }
@@ -223,8 +227,9 @@ class PegelstandFlussband extends IPSModuleStrict
         $aboveHSW = 0;
         foreach ($rows as $r) {
             $h = $history[$r['uuid']] ?? [];
-            if (count($h) === 0) {
+            if (!array_key_exists($r['uuid'], $history)) {
                 // neue Station im Band: die letzten Stunden einmalig laden, damit die Tendenz sofort stimmt
+                // (auch eine Station ohne aktuelle Werte bleibt danach im Verlauf und wird nicht bei jedem Abruf neu geladen)
                 $h = $this->FetchRecent($r['uuid'], $now);
             }
             if ($r['time'] > 0 && (count($h) === 0 || $h[count($h) - 1][0] !== $r['time'])) {

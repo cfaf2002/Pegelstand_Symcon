@@ -2,7 +2,7 @@
 
 [![IP-Symcon ab 8.2](https://img.shields.io/badge/IP--Symcon-ab_8.2-0b6fb3.svg)](https://www.symcon.de)
 [![Optimiert für Symcon 9.0](https://img.shields.io/badge/optimiert_f%C3%BCr-Symcon_9.0-0b6fb3.svg)](https://www.symcon.de/de/service/dokumentation/installation/migrationen/v81-v90-q1-2026/)
-[![Modul-Version 1.1 (Build 4)](https://img.shields.io/badge/Modul--Version-1.1_(Build_4)-informational.svg)](library.json)
+[![Modul-Version 1.2 (Build 5)](https://img.shields.io/badge/Modul--Version-1.2_(Build_5)-informational.svg)](library.json)
 [![Tests](https://github.com/cfaf2002/Pegelstand_Symcon/actions/workflows/tests.yml/badge.svg)](https://github.com/cfaf2002/Pegelstand_Symcon/actions/workflows/tests.yml)
 [![PHP 8.3 und 8.5](https://img.shields.io/badge/PHP-8.3_%7C_8.5-777bb4.svg?logo=php&logoColor=white)](https://www.php.net)
 [![SDK: IPSModuleStrict](https://img.shields.io/badge/SDK-IPSModuleStrict-success.svg)](https://www.symcon.de/de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/module/)
@@ -125,7 +125,7 @@ Abgeschaltete Extras entfernen ihre Variablen wieder.
 |---|---|---|
 | Push-Nachricht senden | aus | Benachrichtigung bei Hochwasserwarnung |
 | Visualisierung | – | Instanz der Kachel-Visualisierung oder eines WebFronts, über die die Nachricht verschickt wird |
-| Hysterese | 5,0 cm | Entwarnung erst, wenn der Pegel um diesen Wert unter der Warnschwelle liegt |
+| Hysterese | 5,0 cm | Entwarnung erst, wenn der Pegel um diesen Wert unter der Warnschwelle liegt – und, sofern die Station einen HSW hat, auch um diesen Wert unter HSW |
 | Auch bei Entwarnung | an | Zusätzliche Nachricht, wenn die Warnung endet |
 | Testnachricht senden | – | Schickt sofort eine Probe-Nachricht |
 
@@ -135,7 +135,7 @@ Ausgelöst wird, wenn PEGELONLINE „über HSW“ meldet oder der Pegel die eige
 
 | Einstellung | Standard | Beschreibung |
 |---|---|---|
-| Archivieren und Verlauf nachladen | aus | Schaltet die Archivierung für Pegel (und Abfluss) ein und lädt beim ersten Abruf den Verlauf nach |
+| Archivieren und Verlauf nachladen | aus | Schaltet die Archivierung für Pegel (und Abfluss) ein und lädt beim ersten Abruf den Verlauf nach. Schlägt das fehl, wird nach 1, 2, 4, 8, 16 und danach alle 24 Stunden erneut versucht |
 | Nachladen der letzten … Tage | 30 | Maximal 30 Tage, mehr liefert PEGELONLINE nicht |
 | Verlauf jetzt ins Archiv nachladen | – | Lädt manuell nach, bereits vorhandene Werte werden übersprungen |
 
@@ -150,7 +150,7 @@ Ausgelöst wird, wenn PEGELONLINE „über HSW“ meldet oder der Pegel die eige
 | Abdunkeln | 35 % | Abdunkelung des Hintergrundbilds, damit die Schrift lesbar bleibt |
 | Kennwert-Linien einzeichnen | an | Gestrichelte Linien für MNW, MW, MHW, HSW (soweit vorhanden) und die eigene Warnschwelle |
 | Verlaufslinie anzeigen | an | Messverlauf als Linie im Hintergrund |
-| Zeitraum der Verlaufslinie | 24 Stunden | max. 720 Stunden (30 Tage, Grenze der API) |
+| Zeitraum der Verlaufslinie | 24 Stunden | max. 720 Stunden (30 Tage, Grenze der API). Längere Verläufe als 24 Stunden werden nur alle 6 Stunden komplett geladen, dazwischen nur die letzten 24 Stunden |
 | Pegellatte | an | Messlatte mit cm-Skala am linken Rand, gelbe Markierung am aktuellen Pegel |
 | Sonne, Mond und Wolken | an | Sonne mit Korona und Strahlen nach echtem Sonnenstand, nachts der Mond in der aktuellen Phase, dazu weiche Haufenwolken in zwei Ebenen |
 | Schiff | an | Modernes Binnen-Containerschiff (flacher Rumpf, Container mit Wellblech-Struktur, hochgesetztes Steuerhaus mit Panoramaverglasung, Radar, LED-Lichter, Schatten auf dem Wasser) mit Bugwelle und Kielwasser, das langsam flussabwärts fährt; nachts mit beleuchtetem Steuerhaus und Positionslichtern. Liegt der Pegel über HSW, ist die Schifffahrt eingestellt: Das Schiff liegt vor Anker und ein Hinweis erscheint |
@@ -214,7 +214,8 @@ In der Kachel:
 - **Schraffierte Säulen** haben nicht alle Kennwerte; ihre Lage ist über MW bzw. HSW geschätzt.
 - **Rote Striche** markieren den HSW (höchster Schifffahrtswasserstand) jeder Station. Erreicht die Säule den Strich, ist die Schifffahrt dort eingestellt und die Säule wird rot.
 - **Legende** unten in der Kachel erklärt Striche, Farben und Schraffur; auf schmalen Kacheln nur das Wichtigste, auf sehr niedrigen ausgeblendet.
-- **Pfeile** an den Werten zeigen, ob die Station in den letzten Stunden um mindestens 2 cm gestiegen oder gefallen ist. Neue Stationen laden ihre letzten 3 Stunden einmalig nach, die Pfeile stimmen also sofort.
+- **Pfeile** an den Werten zeigen, ob die Station in den letzten Stunden um mindestens 2 cm gestiegen oder gefallen ist. Neue Stationen laden ihre letzten 3 Stunden einmalig nach, die Pfeile stimmen also sofort (auch Stationen ohne aktuelle Werte nur einmal).
+- **Abruffehler** stehen unten neben dem Zeitpunkt der letzten Aktualisierung; die letzten Werte bleiben so lange sichtbar.
 - **Antippen** einer Säule zeigt Station, Fluss-km, Pegel, Abstand zum Mittelwasser und Änderung. Ist für die Station schon eine Pegelstand-Instanz angelegt, öffnet „Öffnen“ sie direkt.
 
 Variablen: „Stationen über mittlerem Hochwasser“ und „Stationen über HSW (Schifffahrt eingestellt)“, praktisch für eigene Benachrichtigungen.
@@ -333,6 +334,7 @@ Daten: [PEGELONLINE](https://www.pegelonline.wsv.de/), Wasserstraßen- und Schif
 
 | Version | Build | Datum | Beschreibung |
 |---|---|---|---|
+| 1.2 | 5 | 07.10.2026 | Hochwasserwarnung über HSW mit Hysterese: ein Pegel knapp um HSW löst nicht mehr alle 15 Minuten Warnung und Entwarnung aus. Flussband: Stationen ohne aktuelle Werte werden nicht mehr bei jedem Abruf nachgeladen, Abruffehler sind in der Kachel sichtbar. Langer Kachel-Verlauf (über 24 Stunden) wird nur noch alle 6 Stunden komplett geladen; fehlgeschlagenes Archiv-Nachladen wartet mit wachsendem Abstand; Kennwerte werden nur bei Änderung geschrieben; Prognose „keine“ wird übersetzt |
 | 1.1 | 4 | 06.10.2026 | Hausstil: Regel für die Modulliste (`vendor` gesetzt, höchstens ein Alias) in `STYLEGUIDE.md` und Strukturprüfung ergänzt; Modulliste: jedes Modul erscheint nur noch einmal (Pegelstand, Pegelstand Flussband, Pegelstand Konfigurator) statt zusätzlich unter Suchbegriffen |
 | 1.1 | 3 | 06.10.2026 | Variable „Hochwasser-Warnung“: Darstellung mit vollständigen Farbangaben (die Symcon-App zeigte sonst „Invalid Configuration“) |
 | 1.1 | 2 | 06.10.2026 | Einheitliches Design nach `STYLEGUIDE.md`: Kachel-Grundlage (Farben, Schrift, Radien, Zustandsfarben) und Einstellung „Farbschema der Kachel“ (Symcon-Design, Dunkel, Hell); Kachel-Datei heißt `tile.html`; einheitliche Badges; gemeinsamer Test-Workflow mit Struktur- und Ladetest; Kachel-Grundlage ergänzt; Reihenfolge der Farbschemas: Symcon-Design, Dunkel, Hell, Natur |

@@ -170,6 +170,77 @@ test('Hochwasserwarnung mit Hysterese und Benachrichtigungen', function () use (
     check(mb_strlen(Sym::$notifications[0]['title']) <= 32, 'Titel höchstens 32 Zeichen');
 });
 
+test('HSW-Warnung mit Hysterese: Pegel um HSW löst nicht ständig Warnung und Entwarnung aus', function () use ($now): void {
+    Sym::$instances[777] = ['module' => 'visu', 'props' => [], 'name' => 'Kachel-Visualisierung'];
+    $withHsw = static function (float $level, string $state) use ($now): void {
+        standardFixtures($now, $level, null, $state);
+        Sym::$fixtures['stations/uuid-k.json']['timeseries'][0]['characteristicValues'][] = ['shortname' => 'HSW', 'longname' => 'Höchster Schifffahrtswasserstand', 'unit' => 'cm', 'value' => 330.0];
+    };
+    $withHsw(331.0, 'high');
+    $p = pegel(['StationUUID' => 'uuid-k', 'ShowFloodWarning' => true, 'NotifyEnabled' => true, 'NotifyTarget' => 777]);
+    check($p->value('FloodWarning') === true, 'Über HSW: Warnung');
+    foreach ([[329.0, 'normal'], [331.0, 'high'], [328.0, 'normal'], [330.0, 'high']] as [$level, $state]) {
+        $withHsw($level, $state);
+        $p->Update();
+        check($p->value('FloodWarning') === true, 'knapp um HSW (' . $level . ' cm): Warnung bleibt');
+    }
+    $withHsw(324.0, 'normal');
+    $p->Update();
+    check($p->value('FloodWarning') === false, 'Unter HSW minus Hysterese: Entwarnung');
+    check(count(Sym::$notifications) === 2, 'Nur Warnung und eine Entwarnung erwartet, waren ' . count(Sym::$notifications));
+});
+
+test('Kennwerte werden nur bei Änderung geschrieben', function () use ($now): void {
+    standardFixtures($now);
+    $p = pegel(['StationUUID' => 'uuid-k', 'ShowCharacteristics' => true]);
+    $p->Update();
+    $p->Update();
+    check(($p->writes['CV_MW'] ?? 0) === 1, 'MW nur einmal geschrieben, waren ' . ($p->writes['CV_MW'] ?? 0));
+});
+
+test('Langer Kachel-Verlauf wird nicht bei jedem Messwert komplett geladen', function () use ($now): void {
+    standardFixtures($now);
+    Sym::$fixtures['stations/uuid-k/W/measurements.json?start=PT168H'] = fixtureSeries($now - 600, 168, 318.0, 0.0);
+    $p = pegel(['StationUUID' => 'uuid-k', 'TileHistoryHours' => 168]);
+    check(in_array('stations/uuid-k/W/measurements.json?start=PT168H', Sym::$requests, true), 'Erster Abruf lädt 7 Tage');
+    Sym::$requests = [];
+    standardFixtures($now, 320.0, $now - 60);
+    $p->Poll();
+    check($p->value('Level') === 320.0, 'Neuer Messwert verarbeitet');
+    check(!in_array('stations/uuid-k/W/measurements.json?start=PT168H', Sym::$requests, true), 'Kein erneuter 7-Tage-Abruf');
+    check(in_array('stations/uuid-k/W/measurements.json?start=PT24H', Sym::$requests, true), 'Nur die letzten 24 Stunden');
+    $history = tileData($p)['history'] ?? [];
+    check(count($history) > 0 && $history[0][0] < $now - 100 * 3600, 'Kachel zeigt weiter den langen Verlauf');
+    check(end($history)[1] === 318.0 || end($history)[0] >= $now - 3600, 'Neuester Punkt aus dem frischen Abruf');
+    check($p->value('Trend') === 1, 'Tendenz aus den frischen Werten');
+});
+
+test('Archiv-Nachladen: nach Fehlschlag mit wachsender Wartezeit', function () use ($now): void {
+    standardFixtures($now);
+    $path = 'stations/uuid-k/W/measurements.json?start=P10D';
+    Sym::$fixtures[$path] = null;
+    Sym::$fixtures['__fail'] = 500;
+    $p = pegel(['StationUUID' => 'uuid-k', 'ArchiveEnabled' => true, 'ArchiveBackfillDays' => 10]);
+    $count = static fn (): int => count(array_filter(Sym::$requests, static fn (string $r): bool => $r === $path));
+    check($count() === 1, 'Erster Versuch');
+    standardFixtures($now, 320.0, $now - 60);
+    $p->Poll();
+    check($count() === 1, 'Neuer Messwert: kein sofortiger zweiter Versuch');
+    $retry = json_decode($p->attr('BackfillRetry'), true);
+    check(($retry['fails'] ?? 0) === 1 && ($retry['at'] ?? 0) >= time() + 3500, 'Nächster Versuch in einer Stunde');
+    $p->setAttr('BackfillRetry', json_encode(['uuid' => 'uuid-k', 'fails' => 1, 'at' => time() - 1]));
+    standardFixtures($now, 321.0, $now - 30);
+    $p->Poll();
+    check($count() === 2, 'Nach Ablauf erneut versucht');
+    $retry = json_decode($p->attr('BackfillRetry'), true);
+    check(($retry['fails'] ?? 0) === 2 && ($retry['at'] ?? 0) >= time() + 7100, 'Danach zwei Stunden Pause');
+    Sym::$fixtures[$path] = fixtureSeries($now, 24, 318.0, 0.0);
+    $p->setAttr('BackfillRetry', json_encode(['uuid' => 'uuid-k', 'fails' => 2, 'at' => time() - 1]));
+    standardFixtures($now, 322.0, $now - 20);
+    $p->Poll();
+    check($p->attr('BackfillDone') === 'uuid-k' && $p->attr('BackfillRetry') === '{}', 'Erfolg: vermerkt, Wartezeit zurückgesetzt');
+});
+
 test('Testnachricht ohne Visualisierung: klarer Hinweis', function () use ($now): void {
     standardFixtures($now);
     $p = pegel(['StationUUID' => 'uuid-k']);
@@ -427,6 +498,33 @@ test('Flussband: Auswahl auf Höchstzahl und Wiederholung bei Fehler', function 
     check($f->timers['Update']['ms'] === 120000 && $f->status === 102, 'Erster Fehler: 2 Min., Status bleibt');
 });
 
+test('Flussband: Station ohne aktuelle Werte wird nicht bei jedem Abruf nachgeladen', function () use ($now): void {
+    moselFixtures($now);
+    // Trier meldet seit 6 Stunden nichts mehr
+    Sym::$fixtures['stations/m5/W/measurements.json'] = fixtureSeries($now - 6 * 3600, 3, 640.0, 0.0);
+    $f = flussband(['Water' => 'MOSEL']);
+    $f->Update();
+    $f->Update();
+    $loads = count(array_filter(Sym::$requests, static fn (string $r): bool => $r === 'stations/m5/W/measurements.json?start=PT3H'));
+    check($loads === 1, 'Nur ein Nachladen für Trier erwartet, waren ' . $loads);
+});
+
+test('Flussband: Abruffehler ist in der Kachel sichtbar, Werte bleiben stehen', function () use ($now): void {
+    moselFixtures($now);
+    $f = flussband(['Water' => 'MOSEL']);
+    Sym::$fixtures = [];
+    $f->Update();
+    $f->Update();
+    check((tileData($f)['error'] ?? null) === null, 'Nach zwei Fehlern noch kein Hinweis');
+    $f->Update();
+    check($f->status === 201, 'Dritter Fehler: Status 201');
+    check((tileData($f)['error'] ?? '') === 'PEGELONLINE nicht erreichbar', 'Kachel zeigt den Fehler');
+    check(count(tileData($f)['stations'] ?? []) === 6, 'Letzte Werte bleiben stehen');
+    moselFixtures($now);
+    $f->Update();
+    check(array_key_exists('error', tileData($f)) && tileData($f)['error'] === null, 'Nach Erholung kein Hinweis mehr');
+});
+
 // =====================================================================
 // Formulare passen zu den Eigenschaften
 // =====================================================================
@@ -469,6 +567,9 @@ test('Ohne Übersetzung englisch, mit locale.json deutsch', function () use ($no
     $p = pegel(['StationUUID' => 'uuid-k', 'ShowInsights' => true, 'WarnLevel' => 330]);
     check(str_contains((string) $p->value('Insight'), '23 cm below mean water level'), 'Englische Einordnung erwartet: ' . $p->value('Insight'));
     check($p->value('Forecast') === 'warning threshold in approx. 2 h', 'Englische Prognose erwartet: ' . $p->value('Forecast'));
+    Sym::$fixtures['stations/uuid-k/W/measurements.json'] = fixtureSeries($now - 600, 24, 318.0, 0.0);
+    $q = pegel(['StationUUID' => 'uuid-k', 'ShowInsights' => true], 1001);
+    check($q->value('Forecast') === 'none', 'Ohne Prognose englisch „none“, ist: ' . $q->value('Forecast'));
     check($p->variables['Level']['name'] === 'Water level', 'Englischer Variablenname erwartet');
 
     Sym::reset();

@@ -99,6 +99,8 @@ class Pegelstand extends IPSModuleStrict
         $this->RegisterAttributeBoolean('WarningActive', false);
         $this->RegisterAttributeString('BackfillDone', '');
         $this->RegisterAttributeString('DailyStats', '{}');
+        $this->RegisterAttributeString('BackfillRetry', '{}');
+        $this->RegisterAttributeString('HistoryCache', '{}');
 
         $this->RegisterPropertyBoolean('TileReduceMotion', false);
 
@@ -332,7 +334,7 @@ class Pegelstand extends IPSModuleStrict
         // Zustand und Hochwasserwarnung (mit Hysterese, auch für Kachel und Benachrichtigung)
         $stateMnwMhw = (string) ($current['stateMnwMhw'] ?? 'unknown');
         $stateNswHsw = (string) ($current['stateNswHsw'] ?? 'unknown');
-        $warning = $this->EvaluateWarning($level, $stateNswHsw, $stationName, $waterName);
+        $warning = $this->EvaluateWarning($level, $stateNswHsw, $stationName, $waterName, $cvs['HSW'] ?? null);
 
         if ($this->ReadPropertyBoolean('ShowFloodWarning')) {
             $this->SetValueIfExists('StateMnwMhw', self::STATE_MAP[$stateMnwMhw] ?? 0);
@@ -372,7 +374,7 @@ class Pegelstand extends IPSModuleStrict
             $forecast = $this->BuildForecast($level, $trend['slope'] ?? 0.0, $cvs, $warning);
         }
         $this->SetValueIfExists('Insight', $insight !== '' ? $insight : '–');
-        $this->SetValueIfExists('Forecast', $forecast !== '' ? $forecast : 'keine');
+        $this->SetValueIfExists('Forecast', $forecast !== '' ? $forecast : $this->Translate('none'));
 
         // Schifffahrt: über HSW eingestellt
         $shipping = null;
@@ -382,9 +384,20 @@ class Pegelstand extends IPSModuleStrict
             $shipping = 'free';
         }
 
-        // Archiv beim ersten Lauf für diese Station nachladen
+        // Archiv beim ersten Lauf für diese Station nachladen; nach einem Fehlschlag mit wachsender Wartezeit erneut
         if ($this->ReadPropertyBoolean('ArchiveEnabled') && $this->ReadAttributeString('BackfillDone') !== $uuid) {
-            $this->BackfillArchive();
+            $retry = json_decode($this->ReadAttributeString('BackfillRetry'), true) ?: [];
+            $fails = ($retry['uuid'] ?? '') === $uuid ? (int) ($retry['fails'] ?? 0) : 0;
+            if ($fails === 0 || time() >= (int) ($retry['at'] ?? 0)) {
+                if ($this->BackfillArchive() < 0) {
+                    $fails++;
+                    $wait = min(86400, 3600 * 2 ** min($fails - 1, 5)); // 1, 2, 4, 8, 16, dann 24 Stunden
+                    $this->WriteAttributeString('BackfillRetry', json_encode(['uuid' => $uuid, 'fails' => $fails, 'at' => time() + $wait]));
+                    $this->SendDebug('Archiv', 'Nachladen fehlgeschlagen, nächster Versuch in ' . round($wait / 3600) . ' Std.', 0);
+                } else {
+                    $this->WriteAttributeString('BackfillRetry', '{}');
+                }
+            }
         }
 
         // Kachel
@@ -492,16 +505,54 @@ class Pegelstand extends IPSModuleStrict
 
     /**
      * Holt die Messreihe für den größeren der beiden Zeiträume (Tendenz / Kachel-Verlauf).
+     * Ein langer Kachel-Verlauf (mehr als ein Tag) wird nur alle 6 Stunden komplett geladen und
+     * verkleinert zwischengespeichert; dazwischen kommen nur die letzten Stunden neu dazu.
      *
      * @return array Liste von [Unix-Zeit, Wert], aufsteigend
      */
     private function FetchHistory(string $uuid): array
     {
-        $hours = max(1, $this->ReadPropertyInteger('TrendHours'));
+        $trendHours = max(1, $this->ReadPropertyInteger('TrendHours'));
+        $hours = $trendHours;
         if ($this->ReadPropertyBoolean('UseTile') && $this->ReadPropertyBoolean('TileShowHistory')) {
             $hours = max($hours, min(720, $this->ReadPropertyInteger('TileHistoryHours')));
         }
+        // Tendenz und heutiger Tag (Rekord) brauchen immer die vollen Messwerte
+        $recentHours = max($trendHours, 24);
+        if ($hours <= $recentHours) {
+            return $this->LoadMeasurements($uuid, $hours);
+        }
 
+        $now = time();
+        $cache = json_decode($this->ReadAttributeString('HistoryCache'), true) ?: [];
+        $valid = ($cache['uuid'] ?? '') === $uuid && ($cache['hours'] ?? 0) === $hours
+            && $now - (int) ($cache['fetched'] ?? 0) < 6 * 3600 && !empty($cache['points']);
+        if (!$valid) {
+            $points = $this->LoadMeasurements($uuid, $hours);
+            if (count($points) > 0) {
+                $this->WriteAttributeString('HistoryCache', json_encode(['uuid' => $uuid, 'hours' => $hours, 'fetched' => $now, 'points' => $this->Downsample($points, 360)]));
+            }
+            return $points;
+        }
+
+        $recent = $this->LoadMeasurements($uuid, $recentHours);
+        if (count($recent) === 0) {
+            return [];
+        }
+        $from = $recent[0][0];
+        $older = array_filter($cache['points'], static function ($p) use ($from, $now, $hours): bool {
+            return is_array($p) && count($p) === 2 && $p[0] < $from && $p[0] >= $now - $hours * 3600;
+        });
+        return array_merge(array_values($older), $recent);
+    }
+
+    /**
+     * Messwerte der letzten Stunden von PEGELONLINE.
+     *
+     * @return array Liste von [Unix-Zeit, Wert], aufsteigend
+     */
+    private function LoadMeasurements(string $uuid, int $hours): array
+    {
         $data = $this->ApiRequest('stations/' . rawurlencode($uuid) . '/W/measurements.json?start=PT' . $hours . 'H');
         if ($data === null) {
             $this->SendDebug('Messreihe', 'Nicht abrufbar.', 0);
@@ -604,7 +655,10 @@ class Pegelstand extends IPSModuleStrict
             $kind = (($cv['unit'] ?? '') === 'cm') ? 'level' : 'plain';
 
             $this->Variable($ident, $name, VARIABLETYPE_FLOAT, $kind, $position++, true);
-            $this->SetValue($ident, (float) $cv['value']);
+            // nur bei Änderung schreiben (Kennwerte ändern sich selten)
+            if ($this->GetValue($ident) !== (float) $cv['value']) {
+                $this->SetValue($ident, (float) $cv['value']);
+            }
             $idents[] = $ident;
         }
 

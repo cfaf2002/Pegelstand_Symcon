@@ -37,8 +37,10 @@ trait PegelNotifyTrait
 
     /**
      * Ermittelt den Warnzustand mit Hysterese und benachrichtigt bei Wechseln.
+     * Die Hysterese gilt für die eigene Warnschwelle und – wenn der Kennwert bekannt ist – auch für HSW,
+     * damit ein Pegel knapp um HSW nicht alle 15 Minuten Warnung und Entwarnung auslöst.
      */
-    private function EvaluateWarning(float $level, string $stateNswHsw, string $stationName, string $waterName): bool
+    private function EvaluateWarning(float $level, string $stateNswHsw, string $stationName, string $waterName, ?float $hsw = null): bool
     {
         $warnLevel = $this->ReadPropertyInteger('WarnLevel');
         $hysteresis = max(0.0, $this->ReadPropertyFloat('NotifyHysteresis'));
@@ -57,7 +59,8 @@ trait PegelNotifyTrait
             $this->Notify(sprintf($this->Translate('Flood %s'), $this->Nice($stationName)), sprintf($this->Translate('%s: level %s – %s.'), $place, $levelText, $reason));
         } elseif ($active) {
             $belowLevel = $warnLevel <= 0 || $level < $warnLevel - $hysteresis;
-            if (!$hswHigh && $belowLevel) {
+            $belowHsw = !$hswHigh && ($hsw === null || $level < $hsw - $hysteresis);
+            if ($belowHsw && $belowLevel) {
                 $active = false;
                 $this->SendDebug('Warnung', 'aufgehoben', 0);
                 if ($this->ReadPropertyBoolean('NotifyClear')) {

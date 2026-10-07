@@ -203,6 +203,7 @@ class IPSModuleStrict
     public int $visualizationType = 0;
     public array $visualizationUpdates = [];
     public array $formUpdates = [];
+    public array $writes = [];               // Ident => Anzahl der Schreibvorgänge
     private static int $nextId = 20000;
 
     public function __construct(int $id)
@@ -282,7 +283,16 @@ class IPSModuleStrict
             throw new RuntimeException('SetValue auf fehlende Variable ' . $ident);
         }
         $this->variables[$ident]['value'] = $value;
+        $this->writes[$ident] = ($this->writes[$ident] ?? 0) + 1;
         return true;
+    }
+
+    protected function GetValue(string $ident): mixed
+    {
+        if (!isset($this->variables[$ident])) {
+            throw new RuntimeException('GetValue auf fehlende Variable ' . $ident);
+        }
+        return $this->variables[$ident]['value'];
     }
 
     // Visualisierung und Formular
