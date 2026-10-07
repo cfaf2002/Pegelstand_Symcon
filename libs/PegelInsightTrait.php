@@ -95,11 +95,23 @@ trait PegelInsightTrait
     {
         $stats = json_decode($this->ReadAttributeString('DailyStats'), true) ?: [];
         $today = date('Y-m-d');
-        $days = (($stats['uuid'] ?? '') === $uuid) ? ($stats['days'] ?? []) : [];
+        $sameStation = ($stats['uuid'] ?? '') === $uuid;
+        $days = $sameStation ? ($stats['days'] ?? []) : [];
+        $fails = $sameStation ? (int) ($stats['fails'] ?? 0) : 0;
+        $retryAt = $sameStation ? (int) ($stats['retryAt'] ?? 0) : 0;
+        $fetched = $sameStation ? (string) ($stats['fetched'] ?? '') : '';
 
-        if (($stats['uuid'] ?? '') !== $uuid || ($stats['fetched'] ?? '') !== $today) {
+        // nach einem Fehlschlag mit wachsender Wartezeit erneut (wie beim Archiv-Nachladen)
+        if ($fetched !== $today && ($fails === 0 || time() >= $retryAt)) {
             $data = $this->ApiRequest('stations/' . rawurlencode($uuid) . '/W/measurements.json?start=P30D');
-            if ($data !== null) {
+            if ($data === null) {
+                $fails++;
+                $wait = min(86400, 3600 * 2 ** min($fails - 1, 5)); // 1, 2, 4, 8, 16, dann 24 Stunden
+                $retryAt = time() + $wait;
+                $this->SendDebug('Verlauf', '30-Tage-Abruf fehlgeschlagen, nächster Versuch in ' . round($wait / 3600) . ' Std.', 0);
+            } else {
+                $fails = 0;
+                $retryAt = 0;
                 $days = [];
                 foreach ($data as $m) {
                     $t = isset($m['timestamp']) ? strtotime((string) $m['timestamp']) : false;
@@ -107,7 +119,7 @@ trait PegelInsightTrait
                         $this->AddToDay($days, date('Y-m-d', $t), (float) $m['value']);
                     }
                 }
-                $stats['fetched'] = $today;
+                $fetched = $today;
             }
         }
 
@@ -121,7 +133,12 @@ trait PegelInsightTrait
         ksort($days);
         $days = array_slice($days, -31, null, true);
 
-        $this->WriteAttributeString('DailyStats', json_encode(['uuid' => $uuid, 'fetched' => $stats['fetched'] ?? '', 'days' => $days]));
+        $save = ['uuid' => $uuid, 'fetched' => $fetched, 'days' => $days];
+        if ($fails > 0) {
+            $save['fails'] = $fails;
+            $save['retryAt'] = $retryAt;
+        }
+        $this->WriteAttributeString('DailyStats', json_encode($save));
         return $days;
     }
 

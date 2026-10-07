@@ -241,6 +241,38 @@ test('Archiv-Nachladen: nach Fehlschlag mit wachsender Wartezeit', function () u
     check($p->attr('BackfillDone') === 'uuid-k' && $p->attr('BackfillRetry') === '{}', 'Erfolg: vermerkt, Wartezeit zurückgesetzt');
 });
 
+test('30-Tage-Verlauf: nach Fehlschlag mit wachsender Wartezeit', function () use ($now): void {
+    standardFixtures($now);
+    $path = 'stations/uuid-k/W/measurements.json?start=P30D';
+    Sym::$fixtures[$path] = null;
+    Sym::$fixtures['__fail'] = 500;
+    $p = pegel(['StationUUID' => 'uuid-k']);
+    $count = static fn (): int => count(array_filter(Sym::$requests, static fn (string $r): bool => $r === $path));
+    check($count() === 1, 'Erster Versuch');
+    standardFixtures($now, 320.0, $now - 60);
+    $p->Poll();
+    check($count() === 1, 'Neuer Messwert: kein sofortiger zweiter Versuch');
+    $stats = json_decode($p->attr('DailyStats'), true);
+    check(($stats['fails'] ?? 0) === 1 && ($stats['retryAt'] ?? 0) >= time() + 3500, 'Nächster Versuch in einer Stunde');
+    $stats['retryAt'] = time() - 1;
+    $p->setAttr('DailyStats', json_encode($stats));
+    standardFixtures($now, 321.0, $now - 30);
+    $p->Poll();
+    check($count() === 2, 'Nach Ablauf erneut versucht');
+    $stats = json_decode($p->attr('DailyStats'), true);
+    check(($stats['fails'] ?? 0) === 2 && ($stats['retryAt'] ?? 0) >= time() + 7100, 'Danach zwei Stunden Pause');
+    Sym::$fixtures[$path] = fixtureSeries($now, 24, 318.0, 0.0);
+    $stats['retryAt'] = time() - 1;
+    $p->setAttr('DailyStats', json_encode($stats));
+    standardFixtures($now, 322.0, $now - 20);
+    $p->Poll();
+    $stats = json_decode($p->attr('DailyStats'), true);
+    check($count() === 3 && ($stats['fetched'] ?? '') === date('Y-m-d') && !isset($stats['fails']), 'Erfolg: Tag vermerkt, Wartezeit zurückgesetzt');
+    standardFixtures($now, 323.0, $now - 10);
+    $p->Poll();
+    check($count() === 3, 'Am selben Tag kein weiterer Abruf');
+});
+
 test('Testnachricht ohne Visualisierung: klarer Hinweis', function () use ($now): void {
     standardFixtures($now);
     $p = pegel(['StationUUID' => 'uuid-k']);
