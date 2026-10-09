@@ -2,7 +2,7 @@
 
 [![IP-Symcon ab 8.2](https://img.shields.io/badge/IP--Symcon-ab_8.2-0b6fb3.svg)](https://www.symcon.de)
 [![Optimiert für Symcon 9.0](https://img.shields.io/badge/optimiert_f%C3%BCr-Symcon_9.0-0b6fb3.svg)](https://www.symcon.de/de/service/dokumentation/installation/migrationen/v81-v90-q1-2026/)
-[![Modul-Version 1.3 (Build 6)](https://img.shields.io/badge/Modul--Version-1.3_(Build_6)-informational.svg)](library.json)
+[![Modul-Version 1.3 (Build 7)](https://img.shields.io/badge/Modul--Version-1.3_(Build_7)-informational.svg)](library.json)
 [![Tests](https://github.com/cfaf2002/Pegelstand_Symcon/actions/workflows/tests.yml/badge.svg)](https://github.com/cfaf2002/Pegelstand_Symcon/actions/workflows/tests.yml)
 [![PHP 8.3 und 8.5](https://img.shields.io/badge/PHP-8.3_%7C_8.5-777bb4.svg?logo=php&logoColor=white)](https://www.php.net)
 [![SDK: IPSModuleStrict](https://img.shields.io/badge/SDK-IPSModuleStrict-success.svg)](https://www.symcon.de/de/service/dokumentation/entwicklerbereich/sdk-tools/sdk-php/module/)
@@ -334,6 +334,7 @@ Daten: [PEGELONLINE](https://www.pegelonline.wsv.de/), Wasserstraßen- und Schif
 
 | Version | Build | Datum | Beschreibung |
 |---|---|---|---|
+| 1.3 | 7 | 09.10.2026 | Flussband: Tendenzpfeile als farbige Abzeichen über dem Wert (steigend orange, fallend blau), auf dem Handy gut zu erkennen; Legende passend |
 | 1.3 | 6 | 07.10.2026 | Einordnung „höchster/niedrigster Stand seit …“: ein fehlgeschlagener 30-Tage-Abruf wird nicht mehr bei jedem neuen Messwert wiederholt, sondern nach 1, 2, 4, 8, 16, dann 24 Stunden |
 | 1.2 | 5 | 07.10.2026 | Hochwasserwarnung über HSW mit Hysterese: ein Pegel knapp um HSW löst nicht mehr alle 15 Minuten Warnung und Entwarnung aus. Flussband: Stationen ohne aktuelle Werte werden nicht mehr bei jedem Abruf nachgeladen, Abruffehler sind in der Kachel sichtbar. Langer Kachel-Verlauf (über 24 Stunden) wird nur noch alle 6 Stunden komplett geladen; fehlgeschlagenes Archiv-Nachladen wartet mit wachsendem Abstand; Kennwerte werden nur bei Änderung geschrieben; Prognose „keine“ wird übersetzt |
 | 1.1 | 4 | 06.10.2026 | Hausstil: Regel für die Modulliste (`vendor` gesetzt, höchstens ein Alias) in `STYLEGUIDE.md` und Strukturprüfung ergänzt; Modulliste: jedes Modul erscheint nur noch einmal (Pegelstand, Pegelstand Flussband, Pegelstand Konfigurator) statt zusätzlich unter Suchbegriffen |

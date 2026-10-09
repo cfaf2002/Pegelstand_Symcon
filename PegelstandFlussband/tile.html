@@ -263,11 +263,37 @@
         transition: bottom 1.4s cubic-bezier(.25, .8, .25, 1);
     }
 
-    .col .val i {
-        font-style: normal;
-        font-weight: 600;
-        opacity: .8;
+    .col .val {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
     }
+
+    /* Tendenz als farbiges Abzeichen über dem Wert – auch auf dem Handy gut zu sehen */
+    .tr {
+        display: inline-grid;
+        place-items: center;
+        width: clamp(14px, 4.8cqmin, 19px);
+        height: clamp(14px, 4.8cqmin, 19px);
+        border-radius: var(--pill);
+        color: #ffffff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+        flex: none;
+    }
+
+    .tr svg {
+        width: 72%;
+        height: 72%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .tr.up { background: var(--warn); }
+    .tr.down { background: var(--info); }
 
     .col .hsw {
         position: absolute;
@@ -354,6 +380,14 @@
         flex: none;
     }
 
+    .legend .tr {
+        width: 13px;
+        height: 13px;
+        box-shadow: none;
+    }
+
+    .legend .lg-tr { gap: 3px; }
+
     .legend .lg-hsw {
         width: 14px;
         height: 0;
@@ -433,7 +467,7 @@
         <span class="lg-opt"><i class="lg-col high"></i><b data-t="above MHW">above MHW</b></span>
         <span><i class="lg-col warn"></i><b data-t="above HSW">above HSW</b></span>
         <span class="lg-opt"><i class="lg-col approx"></i><b data-t="position estimated">position estimated</b></span>
-        <span class="lg-opt">↗ ↘ <b data-t="rising / falling">rising / falling</b></span>
+        <span class="lg-tr"><i class="tr up"><svg viewBox="0 0 12 12"><path d="M3 9 9 3M4.5 3H9v4.5"/></svg></i><i class="tr down"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 4.5V9H4.5"/></svg></i><b data-t="rising / falling">rising / falling</b></span>
     </div>
     <div class="foot"><span id="dir"><span data-t="Flow direction">Flow direction</span> →</span><span id="upd"></span></div>
 </div>
@@ -448,6 +482,9 @@
 
     (function () {
         var nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
+        // feste Symbole ohne Nutzdaten – sicher für innerHTML
+        var TR_UP = '<b class="tr up" aria-label="rising"><svg viewBox="0 0 12 12"><path d="M3 9 9 3M4.5 3H9v4.5"/></svg></b>';
+        var TR_DOWN = '<b class="tr down" aria-label="falling"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 4.5V9H4.5"/></svg></b>';
         var nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
         var $ = function (id) { return document.getElementById(id); };
         var last = null;
@@ -569,13 +606,13 @@
                 if (s.stale) cls.push('stale');
                 if (i === selected) cls.push('sel');
                 var p = pos(rel);
-                var arrow = typeof s.diff === 'number' ? (s.diff >= 2 ? ' <i>↗</i>' : (s.diff <= -2 ? ' <i>↘</i>' : '')) : '';
+                var arrow = typeof s.diff === 'number' ? (s.diff >= 2 ? TR_UP : (s.diff <= -2 ? TR_DOWN : '')) : '';
                 html += '<div class="' + cls.join(' ') + '" data-i="' + i + '">';
                 html += '<div class="fill" style="height:' + p.toFixed(2) + '%"></div>';
                 if (typeof s.hswRel === 'number') {
                     html += '<div class="hsw" style="bottom:' + pos(s.hswRel).toFixed(2) + '%" title="HSW"></div>';
                 }
-                html += '<div class="val" style="bottom:' + p.toFixed(2) + '%">' + nf0.format(s.level) + arrow + '</div>';
+                html += '<div class="val" style="bottom:' + p.toFixed(2) + '%">' + arrow + '<span>' + nf0.format(s.level) + '</span></div>';
                 html += '</div>';
                 pts.push([(i + 0.5) / st.length * 100, 100 - p]);
             });
